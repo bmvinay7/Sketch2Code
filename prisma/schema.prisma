@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String      @id @default(cuid())
+  clerkId    String      @unique
+  name       String
+  email      String      @unique
+  avatar     String?
+  flowcharts Flowchart[]
+  saves      Save[]
+  createdAt  DateTime    @default(now())
+}
+
+model Flowchart {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id])
+  title         String
+  problem       String?
+  language      String         @default("python")
+  shapes        Json
+  generatedCode String         @db.Text
+  isPublished   Boolean        @default(false)
+  communityPost CommunityPost?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model CommunityPost {
+  id          String    @id @default(cuid())
+  flowchartId String    @unique
+  flowchart   Flowchart @relation(fields: [flowchartId], references: [id])
+  userId      String
+  upvotes     Int       @default(0)
+  views       Int       @default(0)
+  tags        String[]
+  isVerified  Boolean   @default(false)
+  saves       Save[]
+  createdAt   DateTime  @default(now())
+}
+
+model Save {
+  id      String        @id @default(cuid())
+  userId  String
+  user    User          @relation(fields: [userId], references: [id])
+  postId  String
+  post    CommunityPost @relation(fields: [postId], references: [id])
+  savedAt DateTime      @default(now())
+
+  @@unique([userId, postId])
+}

@@ -1,0 +1,104 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-inter: "Inter";
+  --font-jetbrains: "JetBrains Mono";
+  --background: #0a0a0f;
+  --surface: #12121a;
+  --surface-raised: #1a1a2e;
+  --border: #2a2a3e;
+  --primary: #6366f1;
+  --primary-glow: #6366f120;
+  --accent: #22d3ee;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 18% -12%, rgba(99, 102, 241, 0.18), transparent 34rem),
+    radial-gradient(circle at 100% 8%, rgba(34, 211, 238, 0.11), transparent 30rem),
+    var(--background);
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.24);
+}
+
+.gradient-text {
+  background: linear-gradient(110deg, #818cf8, #22d3ee);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.glass {
+  background: rgba(18, 18, 26, 0.78);
+  border: 1px solid rgba(42, 42, 62, 0.82);
+  backdrop-filter: blur(16px);
+}
+
+.gradient-button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.gradient-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(110deg, rgba(99, 102, 241, 0.75), rgba(34, 211, 238, 0.75));
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 180ms ease;
+  z-index: -1;
+}
+
+.gradient-button:hover::before {
+  opacity: 1;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes fade {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dashed {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+
+.cursor-blink {
+  animation: blink 1s step-end infinite;
+}
