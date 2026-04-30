@@ -35,7 +35,7 @@ export function FlowCanvas(props: FlowCanvasProps) {
   }
 
   return (
-    <div className="flex-1 relative min-w-0 bg-[#08080d]" style={{ height: "calc(100vh - 4rem)" }}>
+    <div className="flex-1 relative min-w-0 bg-transparent mt-16" style={{ height: "calc(100vh - 4rem)" }}>
       <Excalidraw 
         excalidrawAPI={props.onExcalidrawAPI}
         theme="dark"

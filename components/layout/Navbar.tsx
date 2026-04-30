@@ -16,53 +16,51 @@ export function Navbar() {
   const hasClerk = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/80 bg-surface/80 backdrop-blur-md">
-      <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-3">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-primary to-accent text-sm font-black text-white shadow-glow">
-            S2C
-          </span>
-          <span className="hidden text-sm font-semibold tracking-wide text-text-primary sm:block">
-            Sketch2Code
-          </span>
-        </Link>
-        <div className="flex items-center gap-2">
-          {links.map((link) => (
+    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-5 md:px-12 bg-[#08111f]/60 backdrop-blur-[12px] border-b border-border-nav">
+      <Link href="/" className="font-display text-xl font-normal text-text-primary tracking-tight">
+        Sketch2Code
+      </Link>
+      
+      <div className="hidden md:flex gap-10 items-center">
+        {links.map((link) => {
+          const isActive = pathname.startsWith(link.href.split("/")[1] ? `/${link.href.split("/")[1]}` : link.href);
+          return (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
-                "rounded-md px-3 py-2 text-sm text-text-secondary transition hover:text-text-primary",
-                pathname.startsWith(link.href.split("/")[1] ? `/${link.href.split("/")[1]}` : link.href) &&
-                  "bg-surface-raised text-text-primary"
+                "font-body text-[0.9rem] font-normal transition-colors",
+                isActive 
+                  ? "text-text-primary before:content-['●_'] before:text-[0.5rem] before:align-middle before:mr-1" 
+                  : "text-text-secondary hover:text-text-primary"
               )}
             >
               {link.label}
             </Link>
-          ))}
-          {hasClerk ? (
-            <>
-              <SignedOut>
-                <SignInButton mode="modal">
-                  <button className="gradient-button ml-2 rounded-lg bg-surface-raised px-4 py-2 text-sm font-medium text-text-primary">
-                    Sign in
-                  </button>
-                </SignInButton>
-              </SignedOut>
-              <SignedIn>
-                <div className="ml-2">
-                  <UserButton afterSignOutUrl="/" />
-                </div>
-              </SignedIn>
-            </>
-          ) : (
-            <Link href="/sign-in" className="gradient-button ml-2 rounded-lg bg-surface-raised px-4 py-2 text-sm font-medium text-text-primary">
-              Sign in
-            </Link>
-          )}
-          <Code2 className="hidden h-4 w-4 text-accent md:block" />
-        </div>
-      </nav>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center gap-4">
+        {hasClerk ? (
+          <>
+            <SignedOut>
+              <SignInButton mode="modal">
+                <button className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 border border-white/50 rounded-btn text-text-primary font-body text-[0.95rem] hover:bg-white/20 hover:border-white/70 transition-all whitespace-nowrap">
+                  Sign in
+                </button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <UserButton afterSignOutUrl="/" />
+            </SignedIn>
+          </>
+        ) : (
+          <Link href="/sign-in" className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 border border-white/50 rounded-btn text-text-primary font-body text-[0.95rem] hover:bg-white/20 hover:border-white/70 transition-all whitespace-nowrap">
+            Sign in
+          </Link>
+        )}
+      </div>
     </header>
   );
 }

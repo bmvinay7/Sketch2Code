@@ -12,7 +12,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const content = (
     <html lang="en">
-      <body className="font-sans antialiased">
+      <body className="font-body antialiased">
+        <div className="stars-overlay"></div>
         <Navbar />
         <main>{children}</main>
       </body>
