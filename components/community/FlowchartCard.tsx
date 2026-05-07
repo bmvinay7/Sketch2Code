@@ -1,12 +1,16 @@
 import Link from "next/link";
-import { Bookmark, CheckCircle2, GitCommitHorizontal, ThumbsUp } from "lucide-react";
+import { Bookmark, CheckCircle2, GitCommitHorizontal, MessageSquare, ThumbsUp } from "lucide-react";
 
 export interface FlowchartCardData {
   id: string;
-  problem: string;
+  title: string;
+  problem?: string | null;
   language: string;
   shapeCount: number;
   upvotes: number;
+  saves: number;
+  comments: number;
+  authorName: string;
   authorAvatar?: string;
   isVerified: boolean;
 }
@@ -19,7 +23,9 @@ export function FlowchartCard({ item }: { item: FlowchartCardData }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="line-clamp-2 text-base font-bold text-text-primary">{item.problem}</h2>
+          <p className="text-xs uppercase tracking-[0.22em] text-text-muted">{item.authorName}</p>
+          <h2 className="mt-2 line-clamp-2 text-base font-bold text-text-primary">{item.title}</h2>
+          {item.problem ? <p className="mt-2 line-clamp-2 text-sm text-text-secondary">{item.problem}</p> : null}
           <span className="mt-3 inline-flex rounded-full bg-primary/15 px-3 py-1 text-xs font-bold uppercase text-primary">
             {item.language}
           </span>
@@ -35,7 +41,14 @@ export function FlowchartCard({ item }: { item: FlowchartCardData }) {
           <ThumbsUp className="h-4 w-4" />
           {item.upvotes}
         </span>
-        <Bookmark className="h-4 w-4" />
+        <span className="flex items-center gap-1.5">
+          <MessageSquare className="h-4 w-4" />
+          {item.comments}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Bookmark className="h-4 w-4" />
+          {item.saves}
+        </span>
       </div>
     </Link>
   );

@@ -15,7 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-body antialiased">
         <div className="stars-overlay"></div>
         <Navbar />
-        <main>{children}</main>
+        <main className="relative z-10 pt-24">{children}</main>
       </body>
     </html>
   );

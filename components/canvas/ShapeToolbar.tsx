@@ -27,7 +27,7 @@ interface ShapeToolbarProps {
 
 export function ShapeToolbar(props: ShapeToolbarProps) {
   return (
-    <aside className="flex h-[calc(100svh-4rem)] mt-16 w-full flex-col border-r border-white/10 bg-[#08111f]/60 backdrop-blur-md p-6 lg:w-72">
+    <aside className="flex h-[calc(100svh-6rem)] w-full flex-col border-r border-white/10 bg-[#08111f]/60 p-6 backdrop-blur-md lg:w-72">
       <label className="text-xs font-semibold uppercase tracking-[0.22em] text-text-muted">Language</label>
       <div className="mt-4 flex flex-col gap-2">
         {languages.map((item) => (

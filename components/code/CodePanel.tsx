@@ -26,7 +26,7 @@ export function CodePanel({ code, language, isStreaming, hasGhost, analysis, onC
   const chars = code.length > 0 ? code.split("") : ["#", " ", "C", "o", "d", "e", " ", "s", "t", "r", "e", "a", "m", " ", "w", "i", "l", "l", " ", "a", "p", "p", "e", "a", "r", " ", "h", "e", "r", "e"];
 
   return (
-    <aside className="flex h-[calc(100svh-4rem)] mt-16 w-full flex-col border-l border-white/10 bg-[#08111f]/60 backdrop-blur-md lg:w-[420px]">
+    <aside className="flex h-[calc(100svh-6rem)] w-full flex-col border-l border-white/10 bg-[#08111f]/60 backdrop-blur-md lg:w-[420px]">
       <div className="flex items-center justify-between border-b border-white/10 p-5">
         <div className="flex items-center gap-3">
           <FileCode2 className="h-5 w-5 text-accent" />

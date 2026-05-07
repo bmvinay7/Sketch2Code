@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import type { CanvasConnection, CodeLanguage, FlowShape, ShapeType, TraceStep } from "@/types/canvas";
+import { buildCanvasSnapshot, normalizeCanvasSnapshot } from "@/lib/flowcharts";
+import type { CanvasConnection, CanvasSceneSnapshot, CodeLanguage, FlowShape, ShapeType, TraceStep } from "@/types/canvas";
 import { ShapeToolbar } from "@/components/canvas/ShapeToolbar";
 import { CanvasErrorBoundary } from "@/components/canvas/CanvasErrorBoundary";
 import { CodePanel } from "@/components/code/CodePanel";
@@ -13,21 +14,89 @@ const FlowCanvas = dynamic(() => import("@/components/canvas/FlowCanvas").then((
   ssr: false
 });
 
+interface ExcalidrawAPI {
+  getSceneElements: () => ReadonlyArray<Record<string, unknown>>;
+  getAppState: () => Record<string, unknown>;
+  getFiles: () => Record<string, Record<string, unknown>>;
+}
+
 export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
+  const canPersist = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
   const [selectedShape, setSelectedShape] = useState<ShapeType>("process");
   const [language, setLanguage] = useState<CodeLanguage>("python");
   const [problemContext, setProblemContext] = useState("");
   const [shapes, setShapes] = useState<FlowShape[]>([]);
   const [connections, setConnections] = useState<CanvasConnection[]>([]);
+  const [initialSnapshot, setInitialSnapshot] = useState<CanvasSceneSnapshot>();
+  const [snapshot, setSnapshot] = useState<CanvasSceneSnapshot>();
   const [code, setCode] = useState("");
   const [analysis, setAnalysis] = useState<string>();
   const [isStreaming, setIsStreaming] = useState(false);
   const [traceSteps, setTraceSteps] = useState<TraceStep[]>([]);
   const [activeTraceShapeId, setActiveTraceShapeId] = useState<string>();
-  const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
+  const [saveStatus, setSaveStatus] = useState<string>();
+  const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawAPI | null>(null);
 
   const hasEnd = shapes.some((shape) => shape.type === "end");
   const hasGhost = shapes.some((shape) => shape.type === "decision") && !hasEnd;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSavedSession() {
+      if (!canPersist) return;
+
+      try {
+        const response = await fetch(`/api/flowcharts/${sessionId}`);
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 404) return;
+          throw new Error("Failed to load saved flowchart");
+        }
+        const payload = (await response.json()) as {
+          flowchart?: {
+            language: CodeLanguage;
+            problem: string | null;
+            generatedCode: string;
+            shapes: unknown;
+          } | null;
+        };
+
+        if (!payload.flowchart || cancelled) return;
+
+        const restored = normalizeCanvasSnapshot(payload.flowchart.shapes);
+        setLanguage(payload.flowchart.language);
+        setProblemContext(payload.flowchart.problem ?? "");
+        setCode(payload.flowchart.generatedCode);
+        setShapes(restored.shapes);
+        setConnections(restored.connections);
+        setInitialSnapshot(restored);
+        setSnapshot(restored);
+        setSaveStatus("Loaded saved library entry.");
+      } catch {
+        if (!cancelled) {
+          setSaveStatus("Saved session could not be restored.");
+        }
+      }
+    }
+
+    loadSavedSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canPersist, sessionId]);
+
+  useEffect(() => {
+    setSnapshot((current) =>
+      current
+        ? {
+            ...current,
+            shapes,
+            connections
+          }
+        : current
+    );
+  }, [connections, shapes]);
 
   async function getCanvasImageBase64() {
     if (!excalidrawAPI) return null;
@@ -39,7 +108,7 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
         elements,
         appState: excalidrawAPI.getAppState(),
         files: excalidrawAPI.getFiles(),
-        mimeType: "image/png",
+        mimeType: "image/png"
       });
       return new Promise<string>((resolve) => {
         const reader = new FileReader();
@@ -54,6 +123,44 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
     }
   }
 
+  function getCanvasSnapshot() {
+    if (!excalidrawAPI) return snapshot;
+
+    return buildCanvasSnapshot({
+      sceneElements: excalidrawAPI.getSceneElements(),
+      appState: excalidrawAPI.getAppState(),
+      files: excalidrawAPI.getFiles(),
+      shapes,
+      connections
+    });
+  }
+
+  async function persistLibraryEntry(nextCode: string) {
+    if (!canPersist) return;
+
+    const currentSnapshot = getCanvasSnapshot();
+    if (!currentSnapshot) return;
+
+    const response = await fetch(`/api/flowcharts/${sessionId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        problemContext,
+        language,
+        shapes: currentSnapshot,
+        generatedCode: nextCode
+      })
+    });
+
+    if (!response.ok) {
+      setSaveStatus("Code generated, but the library entry was not saved.");
+      return;
+    }
+
+    setSnapshot(currentSnapshot);
+    setSaveStatus("Saved to your library.");
+  }
+
   async function analyze() {
     const imageBase64 = await getCanvasImageBase64();
     if (!imageBase64) {
@@ -63,8 +170,10 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
 
     setIsStreaming(true);
     setCode("");
-    
-    // 1. Code Generation
+    setSaveStatus(undefined);
+
+    let nextCode = "";
+
     try {
       const response = await fetch(`${backendUrl}/stream`, {
         method: "POST",
@@ -83,17 +192,23 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
           buffer = events.pop() ?? "";
           for (const event of events) {
             const dataLine = event.split("\n").find((line) => line.startsWith("data: "));
-            if (dataLine) setCode((current) => current + dataLine.slice(6).replaceAll("\\n", "\n"));
+            if (dataLine) {
+              const chunk = dataLine.slice(6).replaceAll("\\n", "\n");
+              nextCode += chunk;
+              setCode(nextCode);
+            }
           }
         }
       }
     } catch {
-      setCode("# Failed to generate code. Check backend connection.\n");
+      nextCode = "# Failed to generate code. Check backend connection.\n";
+      setCode(nextCode);
     } finally {
       setIsStreaming(false);
     }
 
-    // 2. Algorithm Analysis
+    await persistLibraryEntry(nextCode);
+
     try {
       const response = await fetch(`${backendUrl}/analyze`, {
         method: "POST",
@@ -108,12 +223,11 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
   }
 
   async function trace() {
-    // Trace mode can just be mocked or temporarily disabled since shapes aren't exact
     setTraceSteps([]);
   }
 
   return (
-    <div className="flex min-h-[calc(100svh-4rem)] flex-col lg:flex-row">
+    <div className="flex min-h-[calc(100svh-6rem)] flex-col lg:flex-row">
       <ShapeToolbar
         selectedShape={selectedShape}
         language={language}
@@ -132,9 +246,11 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
           selectedShape={selectedShape}
           shapes={shapes}
           connections={connections}
+          snapshot={initialSnapshot}
           activeTraceShapeId={activeTraceShapeId}
           onShapesChange={setShapes}
           onConnectionsChange={setConnections}
+          onSceneChange={setSnapshot}
           onShapeComplete={() => {}}
           onExcalidrawAPI={(api) => setExcalidrawAPI(api)}
         />
@@ -149,6 +265,11 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
           onCopy={() => navigator.clipboard.writeText(code)}
         />
       </CodeErrorBoundary>
+      {saveStatus ? (
+        <div className="fixed bottom-4 right-4 z-40 rounded-full border border-white/10 bg-[#08111f]/90 px-4 py-2 text-xs text-text-secondary shadow-lg">
+          {saveStatus}
+        </div>
+      ) : null}
       <span className="sr-only">{traceSteps.length} trace steps loaded</span>
     </div>
   );

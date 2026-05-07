@@ -13,6 +13,6 @@ echo "==> Starting backend on http://localhost:3001"
 (cd "$ROOT_DIR/backend" && npm run dev) &
 
 echo "==> Starting frontend on http://localhost:3000"
-(cd "$ROOT_DIR" && npm run dev) &
+(cd "$ROOT_DIR" && npm run build && npm run dev) &
 
 wait -n

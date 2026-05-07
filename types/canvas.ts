@@ -19,6 +19,18 @@ export interface CanvasConnection {
   to: string;
 }
 
+export interface CanvasFileRecord {
+  [key: string]: unknown;
+}
+
+export interface CanvasSceneSnapshot {
+  sceneElements: ReadonlyArray<Record<string, unknown>>;
+  appState: Record<string, unknown>;
+  files: Record<string, CanvasFileRecord>;
+  shapes: FlowShape[];
+  connections: CanvasConnection[];
+}
+
 export interface CanvasState {
   sessionId: string;
   shapes: FlowShape[];
