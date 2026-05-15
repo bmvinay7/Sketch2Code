@@ -61,13 +61,13 @@ export function CommentsPanel({ postId, initialComments }: CommentsPanelProps) {
   }
 
   return (
-    <section className="panel p-4">
+    <section className="panel rounded-[1.8rem] p-6">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--accent)]">Discussion</p>
           <h2 className="mt-2 text-2xl font-black text-[color:var(--text-primary)]">Comments</h2>
         </div>
-        <span className="rounded-md border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-2 py-1 text-xs text-[color:var(--text-secondary)]">
+        <span className="rounded-full border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-3 py-1 text-xs text-[color:var(--text-secondary)]">
           {orderedComments.length} total
         </span>
       </div>
@@ -77,7 +77,7 @@ export function CommentsPanel({ postId, initialComments }: CommentsPanelProps) {
           value={body}
           onChange={(event) => setBody(event.target.value)}
           placeholder="Add a practical note, question, or correction."
-          className="min-h-28 flex-1 resize-none rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 text-sm text-[color:var(--text-primary)] outline-none transition placeholder:text-[color:var(--text-muted)] focus:border-[color:var(--accent)]"
+          className="min-h-28 flex-1 resize-none rounded-2xl border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 text-sm text-[color:var(--text-primary)] outline-none transition placeholder:text-[color:var(--text-muted)] focus:border-[color:var(--accent)]"
         />
         <Button onClick={submitComment} disabled={submitting || body.trim().length === 0} className="self-end">
           <Send className="h-4 w-4" />
@@ -88,7 +88,7 @@ export function CommentsPanel({ postId, initialComments }: CommentsPanelProps) {
       <div className="mt-6 space-y-4">
         {orderedComments.length > 0 ? (
           orderedComments.map((comment) => (
-            <article key={comment.id} className="rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4">
+            <article key={comment.id} className="rounded-2xl border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4">
               <div className="flex items-center gap-3">
                 {comment.user.avatar ? (
                   <img src={comment.user.avatar} alt="" className="h-10 w-10 rounded-full border border-[color:var(--border-soft)] object-cover" />
@@ -106,7 +106,7 @@ export function CommentsPanel({ postId, initialComments }: CommentsPanelProps) {
             </article>
           ))
         ) : (
-          <div className="rounded-lg border border-dashed border-[color:var(--border-strong)] p-8 text-center text-sm text-[color:var(--text-secondary)]">
+          <div className="rounded-2xl border border-dashed border-[color:var(--border-strong)] p-8 text-center text-sm text-[color:var(--text-secondary)]">
             No comments yet. Start the discussion with the exact issue or improvement you noticed in this flowchart.
           </div>
         )}

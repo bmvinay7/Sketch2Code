@@ -39,7 +39,7 @@ export function RemixButton({ flowchartId, canResumeSession }: { flowchartId: st
     <button
       onClick={handleRemix}
       disabled={isRemixing}
-      className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[color:var(--border-strong)] bg-[color:var(--surface-elevated)] px-4 py-3 text-sm font-semibold text-[color:var(--text-primary)] transition duration-200 hover:-translate-y-0.5 hover:bg-[color:var(--surface-hover)] disabled:opacity-50"
+      className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[color:var(--border-strong)] bg-[color:var(--surface-elevated)] px-4 py-3 text-sm font-semibold text-[color:var(--text-primary)] transition duration-200 hover:-translate-y-0.5 hover:bg-[color:var(--surface-hover)] disabled:opacity-50"
     >
       {isRemixing ? "Importing to Workspace..." : canResumeSession ? "Resume this session" : "Remix into your workspace"}
       {canResumeSession ? <ArrowRight className="h-4 w-4 text-[color:var(--accent)]" /> : <Copy className="h-4 w-4 text-[color:var(--accent)]" />}

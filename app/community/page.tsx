@@ -40,22 +40,22 @@ export default async function CommunityPage({
   const commentCounts = await listCommentCounts(posts.map((post) => post.id));
 
   return (
-    <section className="px-3 py-4 sm:px-5">
-      <div className="mx-auto max-w-[1540px] space-y-3">
-        <div className="border-b border-[color:var(--border)] px-1 pb-4">
-          <p className="text-xs font-semibold uppercase text-[color:var(--accent)]">Community artifacts</p>
-          <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <section className="px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1440px] space-y-4">
+        <div className="panel rounded-[2rem] px-6 py-7">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--accent)]">Public community archive</p>
+          <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-4xl">
-              <h1 className="text-4xl font-extrabold leading-tight text-[color:var(--text-primary)] max-sm:text-3xl">
-                Algorithm workspaces people can study, fork, and critique.
+              <h1 className="font-display text-[clamp(2.8rem,5vw,4.8rem)] leading-[0.96] tracking-[-0.06em] text-[color:var(--text-primary)]">
+                A Reddit-style study feed for algorithm canvases.
               </h1>
-              <p className="mt-2 max-w-[68ch] text-sm leading-6 text-[color:var(--text-secondary)]">
-                Published boards include the drawing, code context, discussion, and remix trail.
+              <p className="mt-4 max-w-[68ch] text-base leading-8 text-[color:var(--text-secondary)]">
+                Browse published boards with the original Excalidraw canvas, generated code context, votes, saves, and practical comments. The public feed is where finished thinking patterns become reusable references.
               </p>
             </div>
-            <div className="rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-elevated)] px-4 py-3 text-sm text-[color:var(--text-secondary)]">
+            <div className="rounded-[1.5rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-5 py-4 text-sm text-[color:var(--text-secondary)]">
               <p className="font-semibold text-[color:var(--text-primary)]">{posts.length} live posts in this slice</p>
-              <p className="mt-1">Sort by recency, saves, or votes.</p>
+              <p className="mt-1">Newest first, with save/upvote sorting for denser study sessions.</p>
             </div>
           </div>
         </div>
@@ -90,7 +90,7 @@ export default async function CommunityPage({
             })}
           </div>
         ) : (
-          <div className="panel p-10 text-center text-sm text-[color:var(--text-secondary)]">
+          <div className="panel rounded-[1.8rem] p-10 text-center text-sm text-[color:var(--text-secondary)]">
             No published flowcharts match these filters yet.
           </div>
         )}

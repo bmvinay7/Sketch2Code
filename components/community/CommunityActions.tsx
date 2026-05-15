@@ -63,11 +63,11 @@ export function CommunityActions({ postId, initialUpvotes, initialSaved, comment
         {saved ? "Saved" : "Save"}
       </Button>
       
-      <div className="flex w-full items-center justify-between rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-1">
+      <div className="flex w-full items-center justify-between rounded-full border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-1">
         <button 
           onClick={() => handleVote(1)} 
           disabled={busy !== null}
-          className={`rounded-md p-2 transition-colors ${voteValue === 1 ? 'bg-[color:var(--surface-strong)] text-[color:var(--text-primary)]' : 'text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-strong)] hover:text-[color:var(--text-primary)]'}`}
+          className={`rounded-full p-2 transition-colors ${voteValue === 1 ? 'bg-[color:var(--surface-strong)] text-[color:var(--text-primary)]' : 'text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-strong)] hover:text-[color:var(--text-primary)]'}`}
         >
           <ThumbsUp className="h-4 w-4" />
         </button>
@@ -75,13 +75,13 @@ export function CommunityActions({ postId, initialUpvotes, initialSaved, comment
         <button 
           onClick={() => handleVote(-1)} 
           disabled={busy !== null}
-          className={`rounded-md p-2 transition-colors ${voteValue === -1 ? 'bg-[color:var(--surface-strong)] text-[color:var(--text-primary)]' : 'text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-strong)] hover:text-[color:var(--text-primary)]'}`}
+          className={`rounded-full p-2 transition-colors ${voteValue === -1 ? 'bg-[color:var(--surface-strong)] text-[color:var(--text-primary)]' : 'text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-strong)] hover:text-[color:var(--text-primary)]'}`}
         >
           <ThumbsUp className="h-4 w-4 rotate-180" />
         </button>
       </div>
 
-      <div className="inline-flex items-center justify-center gap-2 rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-5 py-3 text-sm text-[color:var(--text-secondary)]">
+      <div className="inline-flex items-center justify-center gap-2 rounded-full border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-5 py-3 text-sm text-[color:var(--text-secondary)]">
         <MessageSquare className="h-4 w-4 text-[color:var(--accent)]" />
         {commentCount}
       </div>

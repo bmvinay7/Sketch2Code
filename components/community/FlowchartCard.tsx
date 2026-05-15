@@ -23,19 +23,19 @@ export function FlowchartCard({ item }: { item: FlowchartCardData }) {
   return (
     <Link
       href={`/community/${item.id}`}
-      className="group block rounded-lg border border-[color:var(--border)] bg-[color:var(--surface)] p-3 shadow-[var(--shadow-soft)] transition duration-200 hover:-translate-y-0.5 hover:border-[color:var(--border-strong)]"
+      className="group block rounded-[1.8rem] border border-[color:var(--border-soft)] bg-[color:var(--surface)] p-4 shadow-[var(--shadow-soft)] transition duration-200 hover:-translate-y-1 hover:border-[color:var(--border-strong)]"
     >
       <div className="grid gap-4 lg:grid-cols-[88px_minmax(0,1fr)]">
         <div className="flex flex-row gap-3 lg:flex-col lg:items-center">
-          <div className="flex h-12 w-12 flex-col items-center justify-center rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-center">
+          <div className="flex h-12 w-12 flex-col items-center justify-center rounded-[1rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-center">
             <ThumbsUp className="h-4 w-4 text-[color:var(--accent)]" />
             <span className="mt-1 text-xs font-bold text-[color:var(--text-primary)]">{item.upvotes}</span>
           </div>
-          <div className="flex h-12 w-12 flex-col items-center justify-center rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-center">
+          <div className="flex h-12 w-12 flex-col items-center justify-center rounded-[1rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-center">
             <MessageSquare className="h-4 w-4 text-[color:var(--text-secondary)]" />
             <span className="mt-1 text-xs font-bold text-[color:var(--text-primary)]">{item.comments}</span>
           </div>
-          <div className="flex h-12 w-12 flex-col items-center justify-center rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-center">
+          <div className="flex h-12 w-12 flex-col items-center justify-center rounded-[1rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-center">
             <Bookmark className="h-4 w-4 text-[color:var(--text-secondary)]" />
             <span className="mt-1 text-xs font-bold text-[color:var(--text-primary)]">{item.saves}</span>
           </div>
@@ -61,22 +61,22 @@ export function FlowchartCard({ item }: { item: FlowchartCardData }) {
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-[color:var(--text-primary)]">{item.title}</h2>
+            <h2 className="text-xl font-semibold tracking-[-0.03em] text-[color:var(--text-primary)]">{item.title}</h2>
             {item.problem ? (
               <p className="mt-2 line-clamp-3 text-sm leading-7 text-[color:var(--text-secondary)]">{item.problem}</p>
             ) : null}
           </div>
 
-          <div className="overflow-hidden rounded-lg border border-[color:var(--border-soft)]">
-            <FlowchartPreview snapshot={item.snapshot} title={item.title} heightClass="h-[220px]" />
+          <div className="overflow-hidden rounded-[1.25rem] border border-[color:var(--border-soft)]">
+            <FlowchartPreview snapshot={item.snapshot} heightClass="h-[220px]" />
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-xs text-[color:var(--text-secondary)]">
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--border-soft)] px-2 py-1">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--border-soft)] px-3 py-1.5">
               <GitCommitHorizontal className="h-3.5 w-3.5" />
               {item.shapeCount} elements
             </span>
-            <span className="rounded-md border border-[color:var(--border-soft)] px-2 py-1">{item.views} views</span>
+            <span className="rounded-full border border-[color:var(--border-soft)] px-3 py-1.5">{item.views} views</span>
           </div>
         </div>
       </div>

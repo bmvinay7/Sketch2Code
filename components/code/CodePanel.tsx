@@ -55,12 +55,12 @@ export function CodePanel({
   const lines = code.length > 0 ? code.split("\n") : ["# Your generated code stream will appear here."];
 
   return (
-    <aside className="flex h-full min-h-0 flex-col">
-      <div className="border-b border-[color:var(--border-soft)] px-4 py-3">
+    <aside className="panel flex min-h-[420px] flex-col rounded-[2rem]">
+      <div className="border-b border-[color:var(--border-soft)] px-5 py-4">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[color:var(--text-muted)]">Code output</p>
-            <h2 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">{title}</h2>
+            <h2 className="mt-2 text-lg font-semibold text-[color:var(--text-primary)]">{title}</h2>
             <p className="mt-2 line-clamp-2 text-sm leading-6 text-[color:var(--text-secondary)]">
               {contextLabel || "No problem context supplied yet."}
             </p>
@@ -71,7 +71,7 @@ export function CodePanel({
               <button
                 onClick={onPublish}
                 disabled={isPublishing || code.length === 0}
-                className="inline-flex h-9 items-center gap-2 rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-elevated)] px-3 text-sm font-semibold text-[color:var(--text-primary)] transition hover:bg-[color:var(--surface-hover)] disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border-strong)] bg-[color:var(--surface-elevated)] px-4 py-2 text-sm font-semibold text-[color:var(--text-primary)] transition duration-200 hover:-translate-y-0.5 hover:bg-[color:var(--surface-hover)] disabled:opacity-50"
               >
                 <Rocket className="h-4 w-4 text-[color:var(--accent)]" />
                 {isPublishing ? "Publishing..." : "Publish"}
@@ -79,7 +79,7 @@ export function CodePanel({
             ) : null}
             <button
               onClick={onCopy}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-elevated)] text-[color:var(--text-secondary)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text-primary)]"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--border-strong)] bg-[color:var(--surface-elevated)] text-[color:var(--text-secondary)] transition duration-200 hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text-primary)]"
             >
               <Copy className="h-4 w-4" />
             </button>
@@ -87,18 +87,18 @@ export function CodePanel({
         </div>
 
         <div className="mt-4 flex items-center gap-3">
-          <div className="inline-flex items-center gap-2 rounded-md border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-2 py-1 text-xs font-semibold uppercase text-[color:var(--accent)]">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--accent)]">
             <FileCode2 className="h-3.5 w-3.5" />
             {language}
           </div>
-          <div className="rounded-md border border-[color:var(--border-soft)] px-2 py-1 text-xs text-[color:var(--text-secondary)]">
+          <div className="rounded-full border border-[color:var(--border-soft)] px-3 py-1.5 text-xs text-[color:var(--text-secondary)]">
             {isStreaming ? "Streaming line-by-line" : "Ready for publish or remix"}
           </div>
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto px-4 py-4">
-        <div className="code-surface rounded-lg border border-white/10 p-4 font-mono text-[13px] leading-7">
+      <div className="min-h-0 flex-1 overflow-auto px-5 py-5">
+        <div className="code-surface rounded-[1.5rem] border border-white/10 p-5 font-mono text-[13px] leading-7">
           {lines.map((line, lineIndex) => (
             <div key={`${line}-${lineIndex}`} className="group flex gap-4">
               <span className="w-7 shrink-0 select-none text-right text-white/30">{lineIndex + 1}</span>
