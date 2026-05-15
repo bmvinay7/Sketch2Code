@@ -18,30 +18,22 @@ fi
 echo "==> Generating frontend Prisma Client"
 npx prisma generate
 
-echo "==> Installing backend dependencies"
-cd "$ROOT_DIR/backend"
-npm install
-
-echo "==> Creating backend env file if missing"
-if [ ! -f ".env" ]; then
-  cp ".env.example" ".env"
-  echo "Created backend/.env from backend/.env.example"
-else
-  echo "backend/.env already exists"
-fi
-
-echo "==> Generating backend Prisma Client"
-npm run prisma:generate
-
 cat <<'NEXT_STEPS'
 
 Setup complete.
 
-Clerk webhook is optional for localhost. For local auth, fill only:
+Recommended envs for local or Vercel:
+  DATABASE_URL
+  GEMINI_API_KEY
+
+Optional auth envs:
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
   CLERK_SECRET_KEY
+  CLERK_WEBHOOK_SECRET
 
-Gemini is optional for canvas interaction. Without GEMINI_API_KEY, the backend streams fallback code.
+Optional caching envs:
+  UPSTASH_REDIS_REST_URL
+  UPSTASH_REDIS_REST_TOKEN
 
 Starting Sketch2Code now...
 NEXT_STEPS

@@ -1,6 +1,8 @@
 "use client";
 
 import { CheckCircle2, AlertTriangle } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface AnalysisPanelProps {
   markdown?: string;
@@ -24,9 +26,11 @@ export function AnalysisPanel({ markdown }: AnalysisPanelProps) {
             Algorithm Analysis
           </h3>
         </div>
-        <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-text-secondary">
-          {markdown || "No notes returned yet."}
-        </p>
+        <div className="mt-3 prose prose-sm prose-invert max-w-none text-text-secondary">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {markdown || "No notes returned yet."}
+          </ReactMarkdown>
+        </div>
       </article>
     </section>
   );

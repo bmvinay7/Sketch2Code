@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
-import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { requireDatabaseUser } from "@/lib/auth-user";
 import { generateSmartTitle } from "@/lib/flowcharts";
 import { prisma } from "@/lib/prisma";
 
@@ -27,7 +27,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+  const user = await requireDatabaseUser(userId);
   if (!user) return NextResponse.json({ error: "User not synced" }, { status: 409 });
 
   const body = (await request.json()) as FlowchartBody;
@@ -42,7 +42,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     title,
     problem: body.problemContext,
     language: body.language,
-    shapes: body.shapes as Prisma.InputJsonValue,
+    shapes: JSON.stringify(body.shapes),
     generatedCode: body.generatedCode
   };
 

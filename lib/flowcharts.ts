@@ -67,3 +67,25 @@ export function generateSmartTitle(problemContext: string | undefined, code: str
 
   return `${language.toUpperCase()} Flowchart Draft`;
 }
+
+const IGNORE_TEXT = new Set(["start", "end", "yes", "no", "true", "false"]);
+
+export function inferProblemContext(snapshot: CanvasSceneSnapshot | undefined) {
+  if (!snapshot) return "";
+
+  const candidateLines = snapshot.sceneElements
+    .map((element) => asRecord(element))
+    .filter((element) => element?.type === "text" && typeof element.text === "string")
+    .map((element) => asString(element?.text).trim())
+    .flatMap((text) => text.split("\n"))
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter((line) => line.length > 2 && !IGNORE_TEXT.has(line.toLowerCase()))
+    .filter((line, index, lines) => lines.findIndex((entry) => entry.toLowerCase() === line.toLowerCase()) === index);
+
+  if (candidateLines.length === 0) return "";
+
+  const lead = candidateLines.slice(0, 4).join(", ");
+  if (lead.length <= 96) return `Flowchart discussing ${lead}`;
+
+  return `Flowchart discussing ${lead.slice(0, 93).trimEnd()}...`;
+}

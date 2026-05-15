@@ -61,13 +61,13 @@ export function CommentsPanel({ postId, initialComments }: CommentsPanelProps) {
   }
 
   return (
-    <section className="rounded-[28px] border border-white/10 bg-[rgba(8,15,28,0.76)] p-6 backdrop-blur-xl">
+    <section className="panel p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent">Discussion</p>
-          <h2 className="mt-2 text-2xl font-black text-text-primary">Comments</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--accent)]">Discussion</p>
+          <h2 className="mt-2 text-2xl font-black text-[color:var(--text-primary)]">Comments</h2>
         </div>
-        <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-text-secondary">
+        <span className="rounded-md border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-2 py-1 text-xs text-[color:var(--text-secondary)]">
           {orderedComments.length} total
         </span>
       </div>
@@ -77,7 +77,7 @@ export function CommentsPanel({ postId, initialComments }: CommentsPanelProps) {
           value={body}
           onChange={(event) => setBody(event.target.value)}
           placeholder="Add a practical note, question, or correction."
-          className="min-h-28 flex-1 resize-none rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent/50"
+          className="min-h-28 flex-1 resize-none rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 text-sm text-[color:var(--text-primary)] outline-none transition placeholder:text-[color:var(--text-muted)] focus:border-[color:var(--accent)]"
         />
         <Button onClick={submitComment} disabled={submitting || body.trim().length === 0} className="self-end">
           <Send className="h-4 w-4" />
@@ -88,25 +88,25 @@ export function CommentsPanel({ postId, initialComments }: CommentsPanelProps) {
       <div className="mt-6 space-y-4">
         {orderedComments.length > 0 ? (
           orderedComments.map((comment) => (
-            <article key={comment.id} className="rounded-2xl border border-white/8 bg-black/20 p-4">
+            <article key={comment.id} className="rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4">
               <div className="flex items-center gap-3">
                 {comment.user.avatar ? (
-                  <img src={comment.user.avatar} alt="" className="h-10 w-10 rounded-full border border-white/10 object-cover" />
+                  <img src={comment.user.avatar} alt="" className="h-10 w-10 rounded-full border border-[color:var(--border-soft)] object-cover" />
                 ) : (
-                  <div className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/5 text-sm font-semibold text-text-secondary">
+                  <div className="grid h-10 w-10 place-items-center rounded-full border border-[color:var(--border-soft)] bg-[color:var(--surface-strong)] text-sm font-semibold text-[color:var(--text-secondary)]">
                     {comment.user.name.slice(0, 1).toUpperCase()}
                   </div>
                 )}
                 <div>
-                  <p className="text-sm font-semibold text-text-primary">{comment.user.name}</p>
-                  <p className="text-xs text-text-muted">{formatDate(comment.createdAt)}</p>
+                  <p className="text-sm font-semibold text-[color:var(--text-primary)]">{comment.user.name}</p>
+                  <p className="text-xs text-[color:var(--text-muted)]">{formatDate(comment.createdAt)}</p>
                 </div>
               </div>
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-text-secondary">{comment.body}</p>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[color:var(--text-secondary)]">{comment.body}</p>
             </article>
           ))
         ) : (
-          <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center text-sm text-text-secondary">
+          <div className="rounded-lg border border-dashed border-[color:var(--border-strong)] p-8 text-center text-sm text-[color:var(--text-secondary)]">
             No comments yet. Start the discussion with the exact issue or improvement you noticed in this flowchart.
           </div>
         )}

@@ -1,5 +1,6 @@
 import { FlowchartCard } from "@/components/community/FlowchartCard";
 import { LibraryFilters } from "@/components/community/LibraryFilters";
+import { buildCommunityUsername, buildDisplayHandle } from "@/lib/community";
 import { listCommentCounts } from "@/lib/community-comments";
 import { normalizeCanvasSnapshot } from "@/lib/flowcharts";
 import { prisma } from "@/lib/prisma";
@@ -7,20 +8,18 @@ import { prisma } from "@/lib/prisma";
 export default async function CommunityPage({
   searchParams
 }: {
-  searchParams?: { q?: string; language?: string; sort?: string };
+  searchParams: { q?: string; sort?: string };
 }) {
-  const q = searchParams?.q?.trim();
-  const language = searchParams?.language?.trim() || "All";
-  const sort = searchParams?.sort?.trim() || "Newest";
+  const q = searchParams.q || "";
+  const sort = searchParams.sort || "Latest";
 
   const posts = await prisma.communityPost.findMany({
     where: {
       flowchart: {
-        language: language !== "All" ? language.toLowerCase() : undefined,
         OR: q
           ? [
-              { title: { contains: q, mode: "insensitive" } },
-              { problem: { contains: q, mode: "insensitive" } }
+              { title: { contains: q } },
+              { problem: { contains: q } }
             ]
           : undefined
       }
@@ -37,44 +36,65 @@ export default async function CommunityPage({
           : { createdAt: "desc" },
     take: 24
   });
+
   const commentCounts = await listCommentCounts(posts.map((post) => post.id));
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-      <div className="mb-8 rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(14,29,50,0.96),rgba(8,12,22,0.86))] px-6 py-8 shadow-[0_24px_80px_rgba(0,0,0,0.25)] sm:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent">Community Library</p>
-        <h1 className="mt-3 max-w-2xl text-3xl font-black text-text-primary sm:text-4xl">Flowcharts worth studying, critiquing, and remixing</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-7 text-text-secondary">
-          Browse public problem-solving sessions with the original drawing, generated code, and discussion attached to each post.
-        </p>
-      </div>
-      <LibraryFilters initialLanguage={language} initialQuery={q ?? ""} initialSort={sort} />
-      {posts.length > 0 ? (
-        <div className="mt-8 columns-1 gap-4 sm:columns-2 lg:columns-3">
-          {posts.map((post) => (
-            <div key={post.id} className="mb-4 break-inside-avoid">
-              <FlowchartCard
-                item={{
-                  id: post.id,
-                  title: post.flowchart.title,
-                  problem: post.flowchart.problem,
-                  language: post.flowchart.language,
-                  shapeCount: normalizeCanvasSnapshot(post.flowchart.shapes).shapes.length,
-                  upvotes: post.upvotes,
-                  saves: post.saves.length,
-                  comments: commentCounts.get(post.id) ?? 0,
-                  authorName: post.flowchart.user.name,
-                  isVerified: post.isVerified
-                }}
-              />
+    <section className="px-3 py-4 sm:px-5">
+      <div className="mx-auto max-w-[1540px] space-y-3">
+        <div className="border-b border-[color:var(--border)] px-1 pb-4">
+          <p className="text-xs font-semibold uppercase text-[color:var(--accent)]">Community artifacts</p>
+          <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-4xl">
+              <h1 className="text-4xl font-extrabold leading-tight text-[color:var(--text-primary)] max-sm:text-3xl">
+                Algorithm workspaces people can study, fork, and critique.
+              </h1>
+              <p className="mt-2 max-w-[68ch] text-sm leading-6 text-[color:var(--text-secondary)]">
+                Published boards include the drawing, code context, discussion, and remix trail.
+              </p>
             </div>
-          ))}
+            <div className="rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-elevated)] px-4 py-3 text-sm text-[color:var(--text-secondary)]">
+              <p className="font-semibold text-[color:var(--text-primary)]">{posts.length} live posts in this slice</p>
+              <p className="mt-1">Sort by recency, saves, or votes.</p>
+            </div>
+          </div>
         </div>
-      ) : (
-        <div className="mt-10 rounded-lg border border-dashed border-border p-10 text-center text-text-secondary">
-          No published flowcharts match these filters yet.
-        </div>
-      )}
+
+        <LibraryFilters initialQuery={q} initialSort={sort} />
+
+        {posts.length > 0 ? (
+          <div className="grid gap-4">
+            {posts.map((post) => {
+              const authorName = buildDisplayHandle(post.flowchart.user.name, post.flowchart.user.email);
+              return (
+                <FlowchartCard
+                  key={post.id}
+                  item={{
+                    id: post.id,
+                    title: post.flowchart.title,
+                    problem: post.flowchart.problem,
+                    shapeCount: normalizeCanvasSnapshot(post.flowchart.shapes).shapes.length,
+                    upvotes: post.upvotes,
+                    saves: post.saves.length,
+                    comments: commentCounts.get(post.id) ?? 0,
+                    views: post.views,
+                    authorName,
+                    authorUsername: buildCommunityUsername(post.flowchart.user.name, post.flowchart.user.email),
+                    authorAvatar: post.flowchart.user.avatar,
+                    isVerified: post.isVerified,
+                    createdAt: new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(post.createdAt),
+                    snapshot: post.flowchart.shapes
+                  }}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <div className="panel p-10 text-center text-sm text-[color:var(--text-secondary)]">
+            No published flowcharts match these filters yet.
+          </div>
+        )}
+      </div>
     </section>
   );
 }

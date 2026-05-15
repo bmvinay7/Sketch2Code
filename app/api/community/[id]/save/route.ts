@@ -1,11 +1,12 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { requireDatabaseUser } from "@/lib/auth-user";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(_request: Request, { params }: { params: { id: string } }) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+  const user = await requireDatabaseUser(userId);
   if (!user) return NextResponse.json({ error: "User not synced" }, { status: 409 });
   const existing = await prisma.save.findUnique({
     where: { userId_postId: { userId: user.id, postId: params.id } }

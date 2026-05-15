@@ -1,5 +1,5 @@
 export type ShapeType = "start" | "end" | "process" | "io" | "decision" | "connector";
-export type CodeLanguage = "python" | "java" | "cpp";
+export type CodeLanguage = "python" | "java" | "cpp" | "javascript" | "typescript" | "go" | "rust" | "ruby" | "php";
 
 export interface FlowShape {
   id: string;

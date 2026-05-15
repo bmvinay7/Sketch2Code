@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import "@excalidraw/excalidraw/index.css";
 import type { CanvasConnection, CanvasSceneSnapshot, FlowShape, ShapeType } from "@/types/canvas";
 
 interface ExcalidrawHandle {
@@ -29,22 +28,33 @@ interface FlowCanvasProps {
   onExcalidrawAPI?: (api: ExcalidrawHandle | null) => void;
 }
 
-const Excalidraw = dynamic(
-  async () => (await import("@excalidraw/excalidraw")).Excalidraw,
-  {
-    ssr: false
-  }
+// Dynamically import the WRAPPER (default export), not Excalidraw directly
+const ExcalidrawWrapper = dynamic(
+  () => import("@/components/canvas/ExcalidrawWrapper"),
+  { ssr: false }
 );
 
 export function FlowCanvas(props: FlowCanvasProps) {
   const [mounted, setMounted] = useState(false);
   const [api, setApi] = useState<ExcalidrawHandle | null>(null);
+
+  // Store callbacks in refs so they never cause re-renders
+  const onSceneChangeRef = useRef(props.onSceneChange);
+  const onShapesChangeRef = useRef(props.onShapesChange);
+  const shapesRef = useRef(props.shapes);
+  const connectionsRef = useRef(props.connections);
+
+  useEffect(() => { onSceneChangeRef.current = props.onSceneChange; }, [props.onSceneChange]);
+  useEffect(() => { onShapesChangeRef.current = props.onShapesChange; }, [props.onShapesChange]);
+  useEffect(() => { shapesRef.current = props.shapes; }, [props.shapes]);
+  useEffect(() => { connectionsRef.current = props.connections; }, [props.connections]);
+
   const initialData = props.snapshot
-    ? ({
+    ? {
         elements: props.snapshot.sceneElements,
         appState: props.snapshot.appState,
         files: props.snapshot.files
-      } as unknown)
+      }
     : undefined;
 
   useEffect(() => {
@@ -53,7 +63,8 @@ export function FlowCanvas(props: FlowCanvasProps) {
 
   useEffect(() => {
     props.onExcalidrawAPI?.(api);
-  }, [api, props.onExcalidrawAPI]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [api]);
 
   useEffect(() => {
     if (!api || !props.snapshot) return;
@@ -64,54 +75,46 @@ export function FlowCanvas(props: FlowCanvasProps) {
     });
   }, [api, props.snapshot]);
 
+  // Stable handler passed to wrapper — never changes identity
+  const handleSceneChange = useCallback((data: { elements: any; appState: any; files: any }) => {
+    onSceneChangeRef.current?.({
+      sceneElements: data.elements as ReadonlyArray<Record<string, unknown>>,
+      appState: data.appState as unknown as Record<string, unknown>,
+      files: data.files as Record<string, Record<string, unknown>>,
+      shapes: shapesRef.current,
+      connections: connectionsRef.current
+    });
+
+    if (data.elements.length > 0 && shapesRef.current.length === 0) {
+      onShapesChangeRef.current([
+        {
+          id: "excalidraw-layer",
+          type: "process",
+          label: "Excalidraw Node",
+          x: 0, y: 0, width: 0, height: 0,
+          connections: [],
+          isComplete: true
+        }
+      ]);
+    } else if (data.elements.length === 0 && shapesRef.current.length > 0) {
+      onShapesChangeRef.current([]);
+    }
+  }, []);
+
+  const handleAPI = useCallback((apiInstance: ExcalidrawHandle | null) => {
+    setApi(apiInstance);
+  }, []);
+
   if (!mounted) {
-    return <div className="flex-1 bg-[#08080d]" style={{ height: "calc(100svh - 6rem)" }} />;
+    return <div className="h-full min-h-[420px] flex-1 bg-[color:var(--background-strong)]" />;
   }
 
   return (
-    <div className="relative min-w-0 flex-1 bg-transparent" style={{ height: "calc(100svh - 6rem)" }}>
-      <Excalidraw
-        excalidrawAPI={(instance) => setApi(instance as ExcalidrawHandle)}
-        theme="dark"
-        initialData={initialData as never}
-        UIOptions={{
-          canvasActions: {
-            changeViewBackgroundColor: false,
-            clearCanvas: false,
-            export: false,
-            loadScene: false,
-            saveAsImage: false,
-            saveToActiveFile: false,
-            toggleTheme: false
-          }
-        }}
-        onChange={(elements, appState, files) => {
-          props.onSceneChange?.({
-            sceneElements: elements as ReadonlyArray<Record<string, unknown>>,
-            appState: appState as unknown as Record<string, unknown>,
-            files: files as Record<string, Record<string, unknown>>,
-            shapes: props.shapes,
-            connections: props.connections
-          });
-
-          if (elements.length > 0 && props.shapes.length === 0) {
-            props.onShapesChange([
-              {
-                id: "excalidraw-layer",
-                type: "process",
-                label: "Excalidraw Node",
-                x: 0,
-                y: 0,
-                width: 0,
-                height: 0,
-                connections: [],
-                isComplete: true
-              }
-            ]);
-          } else if (elements.length === 0 && props.shapes.length > 0) {
-            props.onShapesChange([]);
-          }
-        }}
+    <div className="relative h-full min-h-[420px] min-w-0 flex-1 overflow-hidden bg-[color:var(--background-strong)]">
+      <ExcalidrawWrapper
+        initialData={initialData}
+        onExcalidrawAPI={handleAPI}
+        onSceneChange={handleSceneChange}
       />
     </div>
   );

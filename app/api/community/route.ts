@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
-import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { requireDatabaseUser } from "@/lib/auth-user";
 import { listCommentCounts } from "@/lib/community-comments";
 import { prisma } from "@/lib/prisma";
 
@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     where: {
       flowchart: {
         language: language && language !== "All" ? language.toLowerCase() : undefined,
-        title: q ? { contains: q, mode: "insensitive" } : undefined
+        title: q ? { contains: q } : undefined
       }
     },
     include: { flowchart: { include: { user: true } }, saves: true },
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     generatedCode: string;
     tags?: string[];
   };
-  const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+  const user = await requireDatabaseUser(userId);
   if (!user) return NextResponse.json({ error: "User not synced" }, { status: 409 });
   const flowchart = await prisma.flowchart.create({
     data: {
@@ -53,10 +53,10 @@ export async function POST(request: Request) {
       title: body.title,
       problem: body.problem,
       language: body.language,
-      shapes: body.shapes as Prisma.InputJsonValue,
+      shapes: JSON.stringify(body.shapes),
       generatedCode: body.generatedCode,
       isPublished: true,
-      communityPost: { create: { userId: user.id, tags: body.tags ?? [] } }
+      communityPost: { create: { userId: user.id, tags: JSON.stringify(body.tags ?? []) } }
     },
     include: { communityPost: true }
   });

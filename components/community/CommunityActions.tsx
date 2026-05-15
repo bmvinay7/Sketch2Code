@@ -16,6 +16,8 @@ export function CommunityActions({ postId, initialUpvotes, initialSaved, comment
   const [saved, setSaved] = useState(initialSaved);
   const [busy, setBusy] = useState<"save" | "upvote" | null>(null);
 
+  const [voteValue, setVoteValue] = useState<number>(0);
+
   async function toggleSave() {
     setBusy("save");
     try {
@@ -28,14 +30,26 @@ export function CommunityActions({ postId, initialUpvotes, initialSaved, comment
     }
   }
 
-  async function upvote() {
+  async function handleVote(value: number) {
     setBusy("upvote");
     try {
-      const response = await fetch(`/api/community/${postId}/upvote`, { method: "POST" });
+      const response = await fetch(`/api/community/${postId}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value })
+      });
       if (!response.ok) return;
-      const payload = (await response.json()) as { post?: { upvotes: number } };
-      if (typeof payload.post?.upvotes === "number") {
-        setUpvotes(payload.post.upvotes);
+      const data = await response.json();
+      
+      if (data.message === "Vote removed") {
+        setUpvotes((prev) => prev - value);
+        setVoteValue(0);
+      } else if (data.message === "Vote changed") {
+        setUpvotes((prev) => prev + (value * 2));
+        setVoteValue(value);
+      } else if (data.message === "Vote added") {
+        setUpvotes((prev) => prev + value);
+        setVoteValue(value);
       }
     } finally {
       setBusy(null);
@@ -43,18 +57,33 @@ export function CommunityActions({ postId, initialUpvotes, initialSaved, comment
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className="grid gap-3 sm:grid-cols-[1fr_auto_1fr]">
       <Button onClick={toggleSave} disabled={busy !== null} className="w-full justify-center">
         <Bookmark className="h-4 w-4" />
         {saved ? "Saved" : "Save"}
       </Button>
-      <Button onClick={upvote} disabled={busy !== null} className="w-full justify-center">
-        <ThumbsUp className="h-4 w-4" />
-        {upvotes} Upvotes
-      </Button>
-      <div className="inline-flex items-center justify-center gap-2 rounded-btn border border-white/10 bg-black/20 px-5 py-3 text-sm text-text-secondary">
-        <MessageSquare className="h-4 w-4 text-accent" />
-        {commentCount} Comments
+      
+      <div className="flex w-full items-center justify-between rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-1">
+        <button 
+          onClick={() => handleVote(1)} 
+          disabled={busy !== null}
+          className={`rounded-md p-2 transition-colors ${voteValue === 1 ? 'bg-[color:var(--surface-strong)] text-[color:var(--text-primary)]' : 'text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-strong)] hover:text-[color:var(--text-primary)]'}`}
+        >
+          <ThumbsUp className="h-4 w-4" />
+        </button>
+        <span className="px-3 text-sm font-semibold text-[color:var(--text-primary)]">{upvotes}</span>
+        <button 
+          onClick={() => handleVote(-1)} 
+          disabled={busy !== null}
+          className={`rounded-md p-2 transition-colors ${voteValue === -1 ? 'bg-[color:var(--surface-strong)] text-[color:var(--text-primary)]' : 'text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-strong)] hover:text-[color:var(--text-primary)]'}`}
+        >
+          <ThumbsUp className="h-4 w-4 rotate-180" />
+        </button>
+      </div>
+
+      <div className="inline-flex items-center justify-center gap-2 rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-5 py-3 text-sm text-[color:var(--text-secondary)]">
+        <MessageSquare className="h-4 w-4 text-[color:var(--accent)]" />
+        {commentCount}
       </div>
     </div>
   );
