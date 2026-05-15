@@ -11,24 +11,24 @@ export default async function ProfilePage() {
   const appUser = user ? await requireDatabaseUser(user.id) : null;
   const profile = appUser
     ? await prisma.user.findUnique({
-        where: { id: appUser.id },
-        include: {
-          flowcharts: {
-            include: { communityPost: true },
-            orderBy: { updatedAt: "desc" },
-            take: 6
+      where: { id: appUser.id },
+      include: {
+        flowcharts: {
+          include: { communityPost: true },
+          orderBy: { updatedAt: "desc" },
+          take: 6
+        },
+        saves: {
+          include: {
+            post: {
+              include: { flowchart: { include: { user: true } } }
+            }
           },
-          saves: {
-            include: {
-              post: {
-                include: { flowchart: { include: { user: true } } }
-              }
-            },
-            orderBy: { savedAt: "desc" },
-            take: 6
-          }
+          orderBy: { savedAt: "desc" },
+          take: 6
         }
-      })
+      }
+    })
     : null;
 
   const publicPosts = await prisma.communityPost.findMany({

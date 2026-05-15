@@ -1,0 +1,1401 @@
+diff --git a/README.md b/README.md
+deleted file mode 100644
+index 85c9842..0000000
+--- a/README.md
++++ /dev/null
+@@ -1,167 +0,0 @@
+-# Sketch2Code
+-
+-Sketch2Code is a visual algorithm intelligence workspace. It converts whiteboard logic, flowcharts, and algorithm sketches into structured code, reusable study artifacts, and shareable community workspaces.
+-
+-The product is built as a canvas-first platform: users sketch logic in Excalidraw, generate code with Gemini, save the full board state to their profile, and publish selected workspaces into a public feed where others can view, comment, save, vote, and remix.
+-
+-## Features
+-
+-- Canvas workspace built on Excalidraw with saved scene snapshots.
+-- Gemini-powered code streaming and algorithm critique.
+-- Auto-derived problem context from readable board labels.
+-- Authenticated user library with saved workspaces.
+-- Public community feed with read-only board previews.
+-- Post detail pages with comments, votes, saves, and remix flow.
+-- Light and dark theme support through a shared Context provider.
+-- Vercel-ready Next.js App Router API routes.
+-- Optional Upstash Redis cache for repeated AI generations.
+-
+-## Tech Stack
+-
+-- Next.js App Router
+-- TypeScript
+-- TailwindCSS
+-- Framer Motion
+-- Lucide Icons
+-- Clerk authentication
+-- Prisma ORM
+-- PostgreSQL
+-- Excalidraw
+-- Google Gemini API
+-- Upstash Redis, optional
+-
+-## Setup
+-
+-1. Install dependencies.
+-
+-```bash
+-npm install
+-```
+-
+-2. Create local env file.
+-
+-```bash
+-cp .env.local.example .env.local
+-```
+-
+-3. Fill required env variables.
+-
+-```bash
+-DATABASE_URL="postgresql://..."
+-GEMINI_API_KEY="..."
+-```
+-
+-4. Generate Prisma client.
+-
+-```bash
+-npx prisma generate
+-```
+-
+-5. Push schema in local development.
+-
+-```bash
+-npx prisma db push
+-```
+-
+-6. Start the app.
+-
+-```bash
+-npm run dev
+-```
+-
+-The app runs at `http://localhost:3000`.
+-
+-## Environment Variables
+-
+-`DATABASE_URL`: PostgreSQL connection string from Neon, Supabase, Vercel Postgres, or another hosted Postgres provider.
+-
+-`GEMINI_API_KEY`: Google Gemini API key used by `/api/stream` and `/api/analyze`.
+-
+-`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`: Clerk publishable key for auth.
+-
+-`CLERK_SECRET_KEY`: Clerk secret key for server-side auth.
+-
+-`CLERK_WEBHOOK_SECRET`: Clerk webhook signing secret. Optional locally because API writes also upsert the current user.
+-
+-`UPSTASH_REDIS_REST_URL`: Optional Upstash REST URL for AI response caching.
+-
+-`UPSTASH_REDIS_REST_TOKEN`: Optional Upstash REST token for AI response caching.
+-
+-`DISABLE_AUTH`: Optional local development escape hatch.
+-
+-## Architecture
+-
+-The frontend and backend run inside the Next.js app. API routes handle AI generation, analysis, persistence, publishing, voting, saving, comments, and remixing.
+-
+-Core paths:
+-
+-- `app/(marketing)/page.tsx`: product landing page.
+-- `app/canvas/[id]/page.tsx`: workspace route.
+-- `components/canvas/CanvasWorkspace.tsx`: workspace orchestration and persistence.
+-- `components/canvas/FlowCanvas.tsx`: Excalidraw mounting and scene capture.
+-- `components/code/CodePanel.tsx`: code stream and analysis display.
+-- `app/community/page.tsx`: public artifact feed.
+-- `app/community/[postId]/page.tsx`: read-only artifact detail.
+-- `app/profile/page.tsx`: private library and public feed access.
+-- `app/api/stream/route.ts`: streaming code generation.
+-- `app/api/analyze/route.ts`: algorithm critique.
+-- `app/api/flowcharts/[id]/route.ts`: save and restore workspaces.
+-- `prisma/schema.prisma`: relational data model.
+-
+-## Folder Structure
+-
+-```text
+-app/
+-  (marketing)/
+-  api/
+-  canvas/
+-  community/
+-  profile/
+-components/
+-  analysis/
+-  canvas/
+-  code/
+-  community/
+-  layout/
+-  theme/
+-  ui/
+-lib/
+-  ai-cache.ts
+-  auth-user.ts
+-  community.ts
+-  community-comments.ts
+-  flowcharts.ts
+-  prisma.ts
+-  redis.ts
+-prisma/
+-  schema.prisma
+-  seed.ts
+-```
+-
+-## Screenshots
+-
+-Reference screenshots live in `Screenshots/`. They document the previous broken states and should be replaced with final captures before release.
+-
+-Expected final captures:
+-
+-- Landing page
+-- Workspace
+-- Community feed
+-- Community post
+-- Profile
+-
+-## Deployment
+-
+-The app targets Vercel. Use a hosted PostgreSQL database, set all required environment variables, run Prisma generation during install, and deploy the Next.js app as a standard Vercel project.
+-
+-See `vercel-deploy.md` for the production checklist.
+-
+-## Roadmap
+-
+-- True drag resizing between workspace panes.
+-- Shareable public workspace URLs with granular permissions.
+-- Better generated Excalidraw thumbnails stored at publish time.
+-- Language-specific code runners and test traces.
+-- Activity notifications for comments/remixes.
+-- Team spaces and collaborative sessions.
+-- Search indexing for algorithm tags and generated code.
+diff --git a/app/community/[postId]/page.tsx b/app/community/[postId]/page.tsx
+index 7088c59..c261fc8 100644
+--- a/app/community/[postId]/page.tsx
++++ b/app/community/[postId]/page.tsx
+@@ -35,22 +35,22 @@ export default async function CommunityPostPage({ params }: { params: { postId:
+   const authorUsername = buildCommunityUsername(post.flowchart.user.name, post.flowchart.user.email);
+ 
+   return (
+-    <section className="px-3 py-4 sm:px-5">
+-      <div className="mx-auto max-w-[1540px] space-y-3">
+-        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
+-          <div className="panel p-4">
++    <section className="px-4 py-6 sm:px-6 lg:px-8">
++      <div className="mx-auto max-w-[1440px] space-y-4">
++        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
++          <div className="panel rounded-[2rem] p-6">
+             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+               <div className="max-w-4xl">
+-                <p className="text-xs font-semibold uppercase text-[color:var(--accent)]">Community post</p>
+-                <h1 className="mt-2 text-3xl font-extrabold leading-tight text-[color:var(--text-primary)] max-sm:text-2xl">
++                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--accent)]">Community post</p>
++                <h1 className="mt-3 font-display text-[clamp(2.4rem,4vw,4.2rem)] leading-[0.97] tracking-[-0.06em] text-[color:var(--text-primary)]">
+                   {post.flowchart.title}
+                 </h1>
+-                <p className="mt-2 max-w-[62ch] text-sm leading-6 text-[color:var(--text-secondary)]">
++                <p className="mt-4 max-w-[62ch] text-base leading-8 text-[color:var(--text-secondary)]">
+                   {post.flowchart.problem || "Published algorithm canvas."}
+                 </p>
+               </div>
+ 
+-              <div className="rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-3">
++              <div className="rounded-[1.4rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4">
+                 <div className="flex items-center gap-3">
+                   {post.flowchart.user.avatar ? (
+                     <img src={post.flowchart.user.avatar} alt="" className="h-11 w-11 rounded-full border border-[color:var(--border-soft)] object-cover" />
+@@ -67,28 +67,28 @@ export default async function CommunityPostPage({ params }: { params: { postId:
+               </div>
+             </div>
+ 
+-            <div className="mt-4 overflow-hidden rounded-lg border border-[color:var(--border-soft)]">
+-              <FlowchartPreview snapshot={post.flowchart.shapes} title={post.flowchart.title} />
++            <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-[color:var(--border-soft)]">
++              <FlowchartPreview snapshot={post.flowchart.shapes} />
+             </div>
+           </div>
+ 
+           <aside className="space-y-4">
+-            <div className="panel p-4">
++            <div className="panel rounded-[1.8rem] p-5">
+               <h2 className="text-lg font-semibold text-[color:var(--text-primary)]">Thread stats</h2>
+               <div className="mt-4 grid gap-3 text-sm text-[color:var(--text-secondary)]">
+-                <div className="flex items-center justify-between rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-3 py-2">
++                <div className="flex items-center justify-between rounded-[1rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-4 py-3">
+                   <span className="inline-flex items-center gap-2"><Eye className="h-4 w-4 text-[color:var(--accent)]" />Views</span>
+                   <span className="font-semibold text-[color:var(--text-primary)]">{post.views}</span>
+                 </div>
+-                <div className="flex items-center justify-between rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-3 py-2">
++                <div className="flex items-center justify-between rounded-[1rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-4 py-3">
+                   <span className="inline-flex items-center gap-2"><ThumbsUp className="h-4 w-4 text-[color:var(--accent)]" />Upvotes</span>
+                   <span className="font-semibold text-[color:var(--text-primary)]">{post.upvotes}</span>
+                 </div>
+-                <div className="flex items-center justify-between rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-3 py-2">
++                <div className="flex items-center justify-between rounded-[1rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-4 py-3">
+                   <span className="inline-flex items-center gap-2"><Bookmark className="h-4 w-4 text-[color:var(--accent)]" />Saves</span>
+                   <span className="font-semibold text-[color:var(--text-primary)]">{post.saves.length}</span>
+                 </div>
+-                <div className="flex items-center justify-between rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-3 py-2">
++                <div className="flex items-center justify-between rounded-[1rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-4 py-3">
+                   <span className="inline-flex items-center gap-2"><MessageSquare className="h-4 w-4 text-[color:var(--accent)]" />Comments</span>
+                   <span className="font-semibold text-[color:var(--text-primary)]">{comments.length}</span>
+                 </div>
+@@ -104,7 +104,7 @@ export default async function CommunityPostPage({ params }: { params: { postId:
+             <RemixButton flowchartId={post.flowchart.id} canResumeSession={canResumeSession} />
+             <Link
+               href="/canvas/new"
+-              className="block rounded-lg border border-[color:var(--border-strong)] bg-[color:var(--surface-elevated)] px-4 py-3 text-center text-sm font-semibold text-[color:var(--text-primary)] transition duration-200 hover:-translate-y-0.5 hover:bg-[color:var(--surface-hover)]"
++              className="block rounded-full border border-[color:var(--border-strong)] bg-[color:var(--surface-elevated)] px-4 py-3 text-center text-sm font-semibold text-[color:var(--text-primary)] transition duration-200 hover:-translate-y-0.5 hover:bg-[color:var(--surface-hover)]"
+             >
+               Start a fresh workspace
+             </Link>
+diff --git a/app/community/page.tsx b/app/community/page.tsx
+index 0090a7a..63d55e2 100644
+--- a/app/community/page.tsx
++++ b/app/community/page.tsx
+@@ -40,22 +40,22 @@ export default async function CommunityPage({
+   const commentCounts = await listCommentCounts(posts.map((post) => post.id));
+ 
+   return (
+-    <section className="px-3 py-4 sm:px-5">
+-      <div className="mx-auto max-w-[1540px] space-y-3">
+-        <div className="border-b border-[color:var(--border)] px-1 pb-4">
+-          <p className="text-xs font-semibold uppercase text-[color:var(--accent)]">Community artifacts</p>
+-          <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
++    <section className="px-4 py-6 sm:px-6 lg:px-8">
++      <div className="mx-auto max-w-[1440px] space-y-4">
++        <div className="panel rounded-[2rem] px-6 py-7">
++          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--accent)]">Public community archive</p>
++          <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+             <div className="max-w-4xl">
+-              <h1 className="text-4xl font-extrabold leading-tight text-[color:var(--text-primary)] max-sm:text-3xl">
+-                Algorithm workspaces people can study, fork, and critique.
++              <h1 className="font-display text-[clamp(2.8rem,5vw,4.8rem)] leading-[0.96] tracking-[-0.06em] text-[color:var(--text-primary)]">
++                A Reddit-style study feed for algorithm canvases.
+               </h1>
+-              <p className="mt-2 max-w-[68ch] text-sm leading-6 text-[color:var(--text-secondary)]">
+-                Published boards include the drawing, code context, discussion, and remix trail.
++              <p className="mt-4 max-w-[68ch] text-base leading-8 text-[color:var(--text-secondary)]">
++                Browse published boards with the original Excalidraw canvas, generated code context, votes, saves, and practical comments. The public feed is where finished thinking patterns become reusable references.
+               </p>
+             </div>
+-            <div className="rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-elevated)] px-4 py-3 text-sm text-[color:var(--text-secondary)]">
++            <div className="rounded-[1.5rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-5 py-4 text-sm text-[color:var(--text-secondary)]">
+               <p className="font-semibold text-[color:var(--text-primary)]">{posts.length} live posts in this slice</p>
+-              <p className="mt-1">Sort by recency, saves, or votes.</p>
++              <p className="mt-1">Newest first, with save/upvote sorting for denser study sessions.</p>
+             </div>
+           </div>
+         </div>
+@@ -90,7 +90,7 @@ export default async function CommunityPage({
+             })}
+           </div>
+         ) : (
+-          <div className="panel p-10 text-center text-sm text-[color:var(--text-secondary)]">
++          <div className="panel rounded-[1.8rem] p-10 text-center text-sm text-[color:var(--text-secondary)]">
+             No published flowcharts match these filters yet.
+           </div>
+         )}
+diff --git a/app/profile/page.tsx b/app/profile/page.tsx
+index a032ef7..1de7efa 100644
+--- a/app/profile/page.tsx
++++ b/app/profile/page.tsx
+@@ -40,9 +40,9 @@ export default async function ProfilePage() {
+   const publishedPosts = profile?.flowcharts.filter((flowchart) => flowchart.communityPost) ?? [];
+ 
+   return (
+-    <section className="px-3 py-4 sm:px-5">
+-      <div className="mx-auto max-w-[1540px] space-y-3">
+-        <div className="border-b border-[color:var(--border)] px-1 pb-4">
++    <section className="px-4 py-6 sm:px-6 lg:px-8">
++      <div className="mx-auto max-w-[1440px] space-y-4">
++        <div className="panel rounded-[2rem] px-6 py-7">
+           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+             <div className="flex items-center gap-4">
+               {user?.imageUrl ? (
+@@ -54,25 +54,25 @@ export default async function ProfilePage() {
+               )}
+               <div>
+                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--accent)]">Your library</p>
+-                <h1 className="mt-2 text-4xl font-extrabold leading-tight text-[color:var(--text-primary)] max-sm:text-3xl">
++                <h1 className="mt-2 font-display text-[clamp(2.6rem,5vw,4.5rem)] leading-[0.96] tracking-[-0.06em] text-[color:var(--text-primary)]">
+                   {user?.fullName ?? "Workspace profile"}
+                 </h1>
+-                <p className="mt-2 max-w-[66ch] text-sm leading-6 text-[color:var(--text-secondary)]">
+-                  Private drafts, saved references, published workspaces, and the public feed in one place.
++                <p className="mt-3 max-w-[66ch] text-base leading-8 text-[color:var(--text-secondary)]">
++                  Your private drafts, saved community references, and published study canvases live together here. Public community posts from everyone also stay visible below because the archive is a shared learning surface.
+                 </p>
+               </div>
+             </div>
+ 
+             <div className="grid gap-3 sm:grid-cols-3">
+-              <div className="rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-4 py-3">
++              <div className="rounded-[1.3rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-4 py-3">
+                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[color:var(--text-muted)]">Drafts</p>
+                 <p className="mt-2 text-2xl font-semibold text-[color:var(--text-primary)]">{profile?.flowcharts.length ?? 0}</p>
+               </div>
+-              <div className="rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-4 py-3">
++              <div className="rounded-[1.3rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-4 py-3">
+                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[color:var(--text-muted)]">Published</p>
+                 <p className="mt-2 text-2xl font-semibold text-[color:var(--text-primary)]">{publishedPosts.length}</p>
+               </div>
+-              <div className="rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-4 py-3">
++              <div className="rounded-[1.3rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-4 py-3">
+                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[color:var(--text-muted)]">Saved</p>
+                 <p className="mt-2 text-2xl font-semibold text-[color:var(--text-primary)]">{profile?.saves.length ?? 0}</p>
+               </div>
+@@ -81,9 +81,9 @@ export default async function ProfilePage() {
+         </div>
+ 
+         <div className="grid gap-4 xl:grid-cols-3">
+-          <section className="panel p-4 xl:col-span-2">
++          <section className="panel rounded-[1.8rem] p-5 xl:col-span-2">
+             <div className="flex items-center gap-3">
+-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[color:var(--accent-soft)] text-[color:var(--accent)]">
++              <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--accent-soft)] text-[color:var(--accent)]">
+                 <Library className="h-5 w-5" />
+               </div>
+               <div>
+@@ -94,16 +94,16 @@ export default async function ProfilePage() {
+             <div className="mt-5 grid gap-4 md:grid-cols-2">
+               {profile?.flowcharts.length ? (
+                 profile.flowcharts.map((flowchart) => (
+-                  <Link key={flowchart.id} href={`/canvas/${flowchart.id}`} className="rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 transition duration-200 hover:-translate-y-0.5">
++                  <Link key={flowchart.id} href={`/canvas/${flowchart.id}`} className="rounded-[1.4rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 transition duration-200 hover:-translate-y-1">
+                     <p className="text-lg font-semibold text-[color:var(--text-primary)]">{flowchart.title}</p>
+                     <p className="mt-2 text-sm leading-7 text-[color:var(--text-secondary)]">{flowchart.problem || "Saved session"}</p>
+-                    <div className="mt-4 overflow-hidden rounded-lg border border-[color:var(--border-soft)]">
+-                      <FlowchartPreview snapshot={flowchart.shapes} title={flowchart.title} heightClass="h-[220px]" />
++                    <div className="mt-4 overflow-hidden rounded-[1rem] border border-[color:var(--border-soft)]">
++                      <FlowchartPreview snapshot={flowchart.shapes} heightClass="h-[220px]" />
+                     </div>
+                   </Link>
+                 ))
+               ) : (
+-                <div className="rounded-lg border border-dashed border-[color:var(--border-strong)] p-8 text-center text-sm text-[color:var(--text-secondary)]">
++                <div className="rounded-[1.4rem] border border-dashed border-[color:var(--border-strong)] p-8 text-center text-sm text-[color:var(--text-secondary)]">
+                   No workspaces saved yet.
+                 </div>
+               )}
+@@ -111,9 +111,9 @@ export default async function ProfilePage() {
+           </section>
+ 
+           <section className="space-y-4">
+-            <div className="panel p-4">
++            <div className="panel rounded-[1.8rem] p-5">
+               <div className="flex items-center gap-3">
+-                <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[color:var(--accent-soft)] text-[color:var(--accent)]">
++                <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--accent-soft)] text-[color:var(--accent)]">
+                   <Share2 className="h-5 w-5" />
+                 </div>
+                 <div>
+@@ -124,22 +124,22 @@ export default async function ProfilePage() {
+               <div className="mt-5 space-y-3">
+                 {publishedPosts.length ? (
+                   publishedPosts.map((flowchart) => (
+-                    <Link key={flowchart.id} href={`/community/${flowchart.communityPost?.id}`} className="block rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 transition duration-200 hover:-translate-y-0.5">
++                    <Link key={flowchart.id} href={`/community/${flowchart.communityPost?.id}`} className="block rounded-[1.2rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 transition duration-200 hover:-translate-y-1">
+                       <p className="font-semibold text-[color:var(--text-primary)]">{flowchart.title}</p>
+                       <p className="mt-2 text-sm text-[color:var(--text-secondary)]">{flowchart.problem || "Published flowchart"}</p>
+                     </Link>
+                   ))
+                 ) : (
+-                  <div className="rounded-lg border border-dashed border-[color:var(--border-strong)] p-5 text-sm text-[color:var(--text-secondary)]">
++                  <div className="rounded-[1.2rem] border border-dashed border-[color:var(--border-strong)] p-5 text-sm text-[color:var(--text-secondary)]">
+                     Nothing published yet.
+                   </div>
+                 )}
+               </div>
+             </div>
+ 
+-            <div className="panel p-4">
++            <div className="panel rounded-[1.8rem] p-5">
+               <div className="flex items-center gap-3">
+-                <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[color:var(--accent-soft)] text-[color:var(--accent)]">
++                <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--accent-soft)] text-[color:var(--accent)]">
+                   <Bookmark className="h-5 w-5" />
+                 </div>
+                 <div>
+@@ -150,7 +150,7 @@ export default async function ProfilePage() {
+               <div className="mt-5 space-y-3">
+                 {profile?.saves.length ? (
+                   profile.saves.map((save) => (
+-                    <Link key={save.id} href={`/community/${save.postId}`} className="block rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 transition duration-200 hover:-translate-y-0.5">
++                    <Link key={save.id} href={`/community/${save.postId}`} className="block rounded-[1.2rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 transition duration-200 hover:-translate-y-1">
+                       <p className="font-semibold text-[color:var(--text-primary)]">{save.post.flowchart.title}</p>
+                       <p className="mt-2 text-sm text-[color:var(--text-secondary)]">
+                         {buildDisplayHandle(save.post.flowchart.user.name, save.post.flowchart.user.email)} · {buildCommunityUsername(save.post.flowchart.user.name, save.post.flowchart.user.email)}
+@@ -158,7 +158,7 @@ export default async function ProfilePage() {
+                     </Link>
+                   ))
+                 ) : (
+-                  <div className="rounded-lg border border-dashed border-[color:var(--border-strong)] p-5 text-sm text-[color:var(--text-secondary)]">
++                  <div className="rounded-[1.2rem] border border-dashed border-[color:var(--border-strong)] p-5 text-sm text-[color:var(--text-secondary)]">
+                     Nothing saved yet.
+                   </div>
+                 )}
+@@ -167,9 +167,9 @@ export default async function ProfilePage() {
+           </section>
+         </div>
+ 
+-        <section className="panel p-4">
++        <section className="panel rounded-[1.8rem] p-5">
+           <div className="flex items-center gap-3">
+-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[color:var(--accent-soft)] text-[color:var(--accent)]">
++            <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--accent-soft)] text-[color:var(--accent)]">
+               <Globe2 className="h-5 w-5" />
+             </div>
+             <div>
+@@ -180,15 +180,15 @@ export default async function ProfilePage() {
+ 
+           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+             {publicPosts.map((post) => (
+-              <Link key={post.id} href={`/community/${post.id}`} className="rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 transition duration-200 hover:-translate-y-0.5">
++              <Link key={post.id} href={`/community/${post.id}`} className="rounded-[1.35rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 transition duration-200 hover:-translate-y-1">
+                 <div className="flex items-center gap-2 text-xs text-[color:var(--text-muted)]">
+                   <Layers3 className="h-3.5 w-3.5" />
+                   {buildDisplayHandle(post.flowchart.user.name, post.flowchart.user.email)}
+                 </div>
+                 <p className="mt-3 text-lg font-semibold text-[color:var(--text-primary)]">{post.flowchart.title}</p>
+                 <p className="mt-2 line-clamp-2 text-sm leading-6 text-[color:var(--text-secondary)]">{post.flowchart.problem || "Public flowchart"}</p>
+-                <div className="mt-4 overflow-hidden rounded-lg border border-[color:var(--border-soft)]">
+-                  <FlowchartPreview snapshot={post.flowchart.shapes} title={post.flowchart.title} heightClass="h-[220px]" />
++                <div className="mt-4 overflow-hidden rounded-[1rem] border border-[color:var(--border-soft)]">
++                  <FlowchartPreview snapshot={post.flowchart.shapes} heightClass="h-[220px]" />
+                 </div>
+               </Link>
+             ))}
+diff --git a/components/canvas/ShapeToolbar.tsx b/components/canvas/ShapeToolbar.tsx
+deleted file mode 100644
+index 7fe673a..0000000
+--- a/components/canvas/ShapeToolbar.tsx
++++ /dev/null
+@@ -1,137 +0,0 @@
+-"use client";
+-
+-import { Download, GitBranch, Save, ScanLine, Terminal } from "lucide-react";
+-import type { CodeLanguage, ShapeType } from "@/types/canvas";
+-import { cn } from "@/lib/utils";
+-
+-const languages: Array<{ label: string; value: CodeLanguage }> = [
+-  { label: "Py", value: "python" },
+-  { label: "TS", value: "typescript" },
+-  { label: "JS", value: "javascript" },
+-  { label: "Java", value: "java" },
+-  { label: "C++", value: "cpp" },
+-  { label: "Go", value: "go" },
+-  { label: "Rust", value: "rust" },
+-  { label: "Ruby", value: "ruby" },
+-  { label: "PHP", value: "php" }
+-];
+-
+-interface ShapeToolbarProps {
+-  selectedShape: ShapeType;
+-  language: CodeLanguage;
+-  title: string;
+-  problemContext: string;
+-  inferredContext: string;
+-  canAnalyze: boolean;
+-  isBusy: boolean;
+-  isSaving: boolean;
+-  onShapeSelect: (type: ShapeType) => void;
+-  onLanguageChange: (language: CodeLanguage) => void;
+-  onContextChange: (value: string) => void;
+-  onAnalyze: () => void;
+-  onAnalyzeImage?: (base64: string) => void;
+-  onSave: () => void;
+-}
+-
+-export function ShapeToolbar(props: ShapeToolbarProps) {
+-  return (
+-    <aside className="flex h-full min-w-0 flex-col overflow-y-auto p-3">
+-      <div className="mb-3 flex items-center justify-between">
+-        <div>
+-          <p className="text-xs font-bold uppercase text-[color:var(--text-muted)]">Controls</p>
+-          <p className="text-sm font-semibold text-[color:var(--text-primary)]">Parse settings</p>
+-        </div>
+-        <ScanLine className="h-4 w-4 text-[color:var(--accent)]" />
+-      </div>
+-
+-      <div className="rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-elevated)] p-2">
+-        <p className="px-1 pb-2 text-xs font-bold uppercase text-[color:var(--text-muted)]">Language</p>
+-        <div className="grid grid-cols-3 gap-1">
+-          {languages.map((item) => (
+-            <button
+-              type="button"
+-              key={item.value}
+-              onClick={() => props.onLanguageChange(item.value)}
+-              className={cn(
+-                "h-8 rounded-md text-xs font-bold transition",
+-                props.language === item.value
+-                  ? "bg-[color:var(--accent)] text-[color:var(--accent-contrast)]"
+-                  : "text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text-primary)]"
+-              )}
+-            >
+-              {item.label}
+-            </button>
+-          ))}
+-        </div>
+-      </div>
+-
+-      <label className="mt-3 text-xs font-bold uppercase text-[color:var(--text-muted)]">Problem context</label>
+-      <textarea
+-        value={props.problemContext}
+-        onChange={(event) => props.onContextChange(event.target.value)}
+-        placeholder="Optional. Board labels can infer context."
+-        className="mt-2 min-h-32 resize-none rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-elevated)] p-3 text-sm leading-6 text-[color:var(--text-primary)] outline-none placeholder:text-[color:var(--text-muted)] focus:border-[color:var(--accent)]"
+-      />
+-
+-      <div className="mt-3 rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-elevated)] p-3">
+-        <div className="flex items-center gap-2 text-sm font-semibold text-[color:var(--text-primary)]">
+-          <GitBranch className="h-4 w-4 text-[color:var(--accent-2)]" />
+-          Inferred brief
+-        </div>
+-        <p className="mt-2 text-xs leading-5 text-[color:var(--text-secondary)]">
+-          {props.inferredContext || "Waiting for readable labels on the canvas."}
+-        </p>
+-      </div>
+-
+-      <input
+-        type="file"
+-        accept="image/*"
+-        className="hidden"
+-        id="image-upload"
+-        onChange={(event) => {
+-          const file = event.target.files?.[0];
+-          if (!file) return;
+-
+-          const reader = new FileReader();
+-          reader.onloadend = () => {
+-            const base64 = (reader.result as string).split(",")[1];
+-            props.onAnalyzeImage?.(base64);
+-          };
+-          reader.readAsDataURL(file);
+-        }}
+-      />
+-
+-      <div className="mt-auto grid gap-2 pt-3">
+-        <button
+-          type="button"
+-          onClick={props.onAnalyze}
+-          disabled={!props.canAnalyze || props.isBusy}
+-          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[color:var(--accent)] px-3 text-sm font-semibold text-[color:var(--accent-contrast)] disabled:opacity-50"
+-        >
+-          <Terminal className="h-4 w-4" />
+-          {props.isBusy ? "Generating" : "Generate code"}
+-        </button>
+-        <div className="grid grid-cols-2 gap-2">
+-          <button
+-            type="button"
+-            className="control inline-flex items-center justify-center gap-2 px-3 text-sm font-semibold"
+-            disabled={props.isBusy}
+-            onClick={() => document.getElementById("image-upload")?.click()}
+-          >
+-            <Download className="h-4 w-4 text-[color:var(--accent-2)]" />
+-            Upload
+-          </button>
+-          <button
+-            type="button"
+-            className="control inline-flex items-center justify-center gap-2 px-3 text-sm font-semibold"
+-            disabled={props.isSaving}
+-            onClick={props.onSave}
+-          >
+-            <Save className="h-4 w-4 text-[color:var(--accent-2)]" />
+-            Save
+-          </button>
+-        </div>
+-      </div>
+-    </aside>
+-  );
+-}
+diff --git a/components/code/CodePanel.tsx b/components/code/CodePanel.tsx
+index 2779035..083d65d 100644
+--- a/components/code/CodePanel.tsx
++++ b/components/code/CodePanel.tsx
+@@ -55,12 +55,12 @@ export function CodePanel({
+   const lines = code.length > 0 ? code.split("\n") : ["# Your generated code stream will appear here."];
+ 
+   return (
+-    <aside className="flex h-full min-h-0 flex-col">
+-      <div className="border-b border-[color:var(--border-soft)] px-4 py-3">
++    <aside className="panel flex min-h-[420px] flex-col rounded-[2rem]">
++      <div className="border-b border-[color:var(--border-soft)] px-5 py-4">
+         <div className="flex items-start justify-between gap-4">
+           <div>
+             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[color:var(--text-muted)]">Code output</p>
+-            <h2 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">{title}</h2>
++            <h2 className="mt-2 text-lg font-semibold text-[color:var(--text-primary)]">{title}</h2>
+             <p className="mt-2 line-clamp-2 text-sm leading-6 text-[color:var(--text-secondary)]">
+               {contextLabel || "No problem context supplied yet."}
+             </p>
+@@ -71,7 +71,7 @@ export function CodePanel({
+               <button
+                 onClick={onPublish}
+                 disabled={isPublishing || code.length === 0}
+-                className="inline-flex h-9 items-center gap-2 rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-elevated)] px-3 text-sm font-semibold text-[color:var(--text-primary)] transition hover:bg-[color:var(--surface-hover)] disabled:opacity-50"
++                className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border-strong)] bg-[color:var(--surface-elevated)] px-4 py-2 text-sm font-semibold text-[color:var(--text-primary)] transition duration-200 hover:-translate-y-0.5 hover:bg-[color:var(--surface-hover)] disabled:opacity-50"
+               >
+                 <Rocket className="h-4 w-4 text-[color:var(--accent)]" />
+                 {isPublishing ? "Publishing..." : "Publish"}
+@@ -79,7 +79,7 @@ export function CodePanel({
+             ) : null}
+             <button
+               onClick={onCopy}
+-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-elevated)] text-[color:var(--text-secondary)] transition hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text-primary)]"
++              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--border-strong)] bg-[color:var(--surface-elevated)] text-[color:var(--text-secondary)] transition duration-200 hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--text-primary)]"
+             >
+               <Copy className="h-4 w-4" />
+             </button>
+@@ -87,18 +87,18 @@ export function CodePanel({
+         </div>
+ 
+         <div className="mt-4 flex items-center gap-3">
+-          <div className="inline-flex items-center gap-2 rounded-md border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-2 py-1 text-xs font-semibold uppercase text-[color:var(--accent)]">
++          <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--accent)]">
+             <FileCode2 className="h-3.5 w-3.5" />
+             {language}
+           </div>
+-          <div className="rounded-md border border-[color:var(--border-soft)] px-2 py-1 text-xs text-[color:var(--text-secondary)]">
++          <div className="rounded-full border border-[color:var(--border-soft)] px-3 py-1.5 text-xs text-[color:var(--text-secondary)]">
+             {isStreaming ? "Streaming line-by-line" : "Ready for publish or remix"}
+           </div>
+         </div>
+       </div>
+ 
+-      <div className="min-h-0 flex-1 overflow-auto px-4 py-4">
+-        <div className="code-surface rounded-lg border border-white/10 p-4 font-mono text-[13px] leading-7">
++      <div className="min-h-0 flex-1 overflow-auto px-5 py-5">
++        <div className="code-surface rounded-[1.5rem] border border-white/10 p-5 font-mono text-[13px] leading-7">
+           {lines.map((line, lineIndex) => (
+             <div key={`${line}-${lineIndex}`} className="group flex gap-4">
+               <span className="w-7 shrink-0 select-none text-right text-white/30">{lineIndex + 1}</span>
+diff --git a/components/community/CommentsPanel.tsx b/components/community/CommentsPanel.tsx
+index b221419..04e7120 100644
+--- a/components/community/CommentsPanel.tsx
++++ b/components/community/CommentsPanel.tsx
+@@ -61,13 +61,13 @@ export function CommentsPanel({ postId, initialComments }: CommentsPanelProps) {
+   }
+ 
+   return (
+-    <section className="panel p-4">
++    <section className="panel rounded-[1.8rem] p-6">
+       <div className="flex items-center justify-between gap-3">
+         <div>
+           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--accent)]">Discussion</p>
+           <h2 className="mt-2 text-2xl font-black text-[color:var(--text-primary)]">Comments</h2>
+         </div>
+-        <span className="rounded-md border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-2 py-1 text-xs text-[color:var(--text-secondary)]">
++        <span className="rounded-full border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-3 py-1 text-xs text-[color:var(--text-secondary)]">
+           {orderedComments.length} total
+         </span>
+       </div>
+@@ -77,7 +77,7 @@ export function CommentsPanel({ postId, initialComments }: CommentsPanelProps) {
+           value={body}
+           onChange={(event) => setBody(event.target.value)}
+           placeholder="Add a practical note, question, or correction."
+-          className="min-h-28 flex-1 resize-none rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 text-sm text-[color:var(--text-primary)] outline-none transition placeholder:text-[color:var(--text-muted)] focus:border-[color:var(--accent)]"
++          className="min-h-28 flex-1 resize-none rounded-2xl border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 text-sm text-[color:var(--text-primary)] outline-none transition placeholder:text-[color:var(--text-muted)] focus:border-[color:var(--accent)]"
+         />
+         <Button onClick={submitComment} disabled={submitting || body.trim().length === 0} className="self-end">
+           <Send className="h-4 w-4" />
+@@ -88,7 +88,7 @@ export function CommentsPanel({ postId, initialComments }: CommentsPanelProps) {
+       <div className="mt-6 space-y-4">
+         {orderedComments.length > 0 ? (
+           orderedComments.map((comment) => (
+-            <article key={comment.id} className="rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4">
++            <article key={comment.id} className="rounded-2xl border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4">
+               <div className="flex items-center gap-3">
+                 {comment.user.avatar ? (
+                   <img src={comment.user.avatar} alt="" className="h-10 w-10 rounded-full border border-[color:var(--border-soft)] object-cover" />
+@@ -106,7 +106,7 @@ export function CommentsPanel({ postId, initialComments }: CommentsPanelProps) {
+             </article>
+           ))
+         ) : (
+-          <div className="rounded-lg border border-dashed border-[color:var(--border-strong)] p-8 text-center text-sm text-[color:var(--text-secondary)]">
++          <div className="rounded-2xl border border-dashed border-[color:var(--border-strong)] p-8 text-center text-sm text-[color:var(--text-secondary)]">
+             No comments yet. Start the discussion with the exact issue or improvement you noticed in this flowchart.
+           </div>
+         )}
+diff --git a/components/community/CommunityActions.tsx b/components/community/CommunityActions.tsx
+index 6e01660..17825a8 100644
+--- a/components/community/CommunityActions.tsx
++++ b/components/community/CommunityActions.tsx
+@@ -63,11 +63,11 @@ export function CommunityActions({ postId, initialUpvotes, initialSaved, comment
+         {saved ? "Saved" : "Save"}
+       </Button>
+       
+-      <div className="flex w-full items-center justify-between rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-1">
++      <div className="flex w-full items-center justify-between rounded-full border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-1">
+         <button 
+           onClick={() => handleVote(1)} 
+           disabled={busy !== null}
+-          className={`rounded-md p-2 transition-colors ${voteValue === 1 ? 'bg-[color:var(--surface-strong)] text-[color:var(--text-primary)]' : 'text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-strong)] hover:text-[color:var(--text-primary)]'}`}
++          className={`rounded-full p-2 transition-colors ${voteValue === 1 ? 'bg-[color:var(--surface-strong)] text-[color:var(--text-primary)]' : 'text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-strong)] hover:text-[color:var(--text-primary)]'}`}
+         >
+           <ThumbsUp className="h-4 w-4" />
+         </button>
+@@ -75,13 +75,13 @@ export function CommunityActions({ postId, initialUpvotes, initialSaved, comment
+         <button 
+           onClick={() => handleVote(-1)} 
+           disabled={busy !== null}
+-          className={`rounded-md p-2 transition-colors ${voteValue === -1 ? 'bg-[color:var(--surface-strong)] text-[color:var(--text-primary)]' : 'text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-strong)] hover:text-[color:var(--text-primary)]'}`}
++          className={`rounded-full p-2 transition-colors ${voteValue === -1 ? 'bg-[color:var(--surface-strong)] text-[color:var(--text-primary)]' : 'text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-strong)] hover:text-[color:var(--text-primary)]'}`}
+         >
+           <ThumbsUp className="h-4 w-4 rotate-180" />
+         </button>
+       </div>
+ 
+-      <div className="inline-flex items-center justify-center gap-2 rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-5 py-3 text-sm text-[color:var(--text-secondary)]">
++      <div className="inline-flex items-center justify-center gap-2 rounded-full border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-5 py-3 text-sm text-[color:var(--text-secondary)]">
+         <MessageSquare className="h-4 w-4 text-[color:var(--accent)]" />
+         {commentCount}
+       </div>
+diff --git a/components/community/FlowchartCard.tsx b/components/community/FlowchartCard.tsx
+index 4281e6a..fcd8b58 100644
+--- a/components/community/FlowchartCard.tsx
++++ b/components/community/FlowchartCard.tsx
+@@ -23,19 +23,19 @@ export function FlowchartCard({ item }: { item: FlowchartCardData }) {
+   return (
+     <Link
+       href={`/community/${item.id}`}
+-      className="group block rounded-lg border border-[color:var(--border)] bg-[color:var(--surface)] p-3 shadow-[var(--shadow-soft)] transition duration-200 hover:-translate-y-0.5 hover:border-[color:var(--border-strong)]"
++      className="group block rounded-[1.8rem] border border-[color:var(--border-soft)] bg-[color:var(--surface)] p-4 shadow-[var(--shadow-soft)] transition duration-200 hover:-translate-y-1 hover:border-[color:var(--border-strong)]"
+     >
+       <div className="grid gap-4 lg:grid-cols-[88px_minmax(0,1fr)]">
+         <div className="flex flex-row gap-3 lg:flex-col lg:items-center">
+-          <div className="flex h-12 w-12 flex-col items-center justify-center rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-center">
++          <div className="flex h-12 w-12 flex-col items-center justify-center rounded-[1rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-center">
+             <ThumbsUp className="h-4 w-4 text-[color:var(--accent)]" />
+             <span className="mt-1 text-xs font-bold text-[color:var(--text-primary)]">{item.upvotes}</span>
+           </div>
+-          <div className="flex h-12 w-12 flex-col items-center justify-center rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-center">
++          <div className="flex h-12 w-12 flex-col items-center justify-center rounded-[1rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-center">
+             <MessageSquare className="h-4 w-4 text-[color:var(--text-secondary)]" />
+             <span className="mt-1 text-xs font-bold text-[color:var(--text-primary)]">{item.comments}</span>
+           </div>
+-          <div className="flex h-12 w-12 flex-col items-center justify-center rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-center">
++          <div className="flex h-12 w-12 flex-col items-center justify-center rounded-[1rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-center">
+             <Bookmark className="h-4 w-4 text-[color:var(--text-secondary)]" />
+             <span className="mt-1 text-xs font-bold text-[color:var(--text-primary)]">{item.saves}</span>
+           </div>
+@@ -61,22 +61,22 @@ export function FlowchartCard({ item }: { item: FlowchartCardData }) {
+           </div>
+ 
+           <div>
+-            <h2 className="text-lg font-semibold text-[color:var(--text-primary)]">{item.title}</h2>
++            <h2 className="text-xl font-semibold tracking-[-0.03em] text-[color:var(--text-primary)]">{item.title}</h2>
+             {item.problem ? (
+               <p className="mt-2 line-clamp-3 text-sm leading-7 text-[color:var(--text-secondary)]">{item.problem}</p>
+             ) : null}
+           </div>
+ 
+-          <div className="overflow-hidden rounded-lg border border-[color:var(--border-soft)]">
+-            <FlowchartPreview snapshot={item.snapshot} title={item.title} heightClass="h-[220px]" />
++          <div className="overflow-hidden rounded-[1.25rem] border border-[color:var(--border-soft)]">
++            <FlowchartPreview snapshot={item.snapshot} heightClass="h-[220px]" />
+           </div>
+ 
+           <div className="flex flex-wrap items-center gap-3 text-xs text-[color:var(--text-secondary)]">
+-            <span className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--border-soft)] px-2 py-1">
++            <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--border-soft)] px-3 py-1.5">
+               <GitCommitHorizontal className="h-3.5 w-3.5" />
+               {item.shapeCount} elements
+             </span>
+-            <span className="rounded-md border border-[color:var(--border-soft)] px-2 py-1">{item.views} views</span>
++            <span className="rounded-full border border-[color:var(--border-soft)] px-3 py-1.5">{item.views} views</span>
+           </div>
+         </div>
+       </div>
+diff --git a/components/community/FlowchartPreview.tsx b/components/community/FlowchartPreview.tsx
+index f8207e9..96adbd6 100644
+--- a/components/community/FlowchartPreview.tsx
++++ b/components/community/FlowchartPreview.tsx
+@@ -11,99 +11,12 @@ const Excalidraw = dynamic(
+   { ssr: false }
+ );
+ 
+-function makeElementBase(id: string, type: string, x: number, y: number, width: number, height: number, strokeColor: string) {
+-  return {
+-    id,
+-    type,
+-    x,
+-    y,
+-    width,
+-    height,
+-    angle: 0,
+-    strokeColor,
+-    backgroundColor: "transparent",
+-    fillStyle: "solid",
+-    strokeWidth: 2,
+-    strokeStyle: "solid",
+-    roughness: 1,
+-    opacity: 100,
+-    groupIds: [],
+-    frameId: null,
+-    roundness: type === "rectangle" ? { type: 3 } : null,
+-    seed: 120000 + id.length,
+-    version: 1,
+-    versionNonce: 240000 + id.length,
+-    isDeleted: false,
+-    boundElements: null,
+-    updated: 1,
+-    link: null,
+-    locked: false
+-  };
+-}
+-
+-function makeText(id: string, text: string, x: number, y: number, width: number, strokeColor: string) {
+-  return {
+-    ...makeElementBase(id, "text", x, y, width, 24, strokeColor),
+-    text,
+-    fontSize: 18,
+-    fontFamily: 3,
+-    textAlign: "center",
+-    verticalAlign: "middle",
+-    baseline: 18,
+-    containerId: null,
+-    originalText: text,
+-    lineHeight: 1.25
+-  };
+-}
+-
+-function makeArrow(id: string, x: number, y: number, width: number, height: number) {
+-  return {
+-    ...makeElementBase(id, "arrow", x, y, width, height, "#6b7280"),
+-    points: [
+-      [0, 0],
+-      [width, height]
+-    ],
+-    lastCommittedPoint: null,
+-    startBinding: null,
+-    endBinding: null,
+-    startArrowhead: null,
+-    endArrowhead: "arrow"
+-  };
+-}
+-
+-function fallbackElements(title: string) {
+-  const compactTitle = title.length > 24 ? `${title.slice(0, 22)}...` : title;
+-
+-  return [
+-    makeElementBase("fallback-start", "ellipse", 160, 70, 220, 54, "#0c8f78"),
+-    makeText("fallback-start-text", "Start input", 182, 85, 176, "#0c8f78"),
+-    makeArrow("fallback-a1", 270, 124, 0, 64),
+-    makeElementBase("fallback-branch", "diamond", 178, 188, 184, 116, "#d68200"),
+-    makeText("fallback-branch-text", compactTitle, 202, 232, 136, "#d68200"),
+-    makeArrow("fallback-a2", 362, 246, 102, 0),
+-    makeElementBase("fallback-process", "rectangle", 468, 214, 220, 66, "#2f68ff"),
+-    makeText("fallback-process-text", "Update state", 496, 234, 164, "#2f68ff"),
+-    makeArrow("fallback-a3", 270, 304, 0, 70),
+-    makeElementBase("fallback-end", "ellipse", 160, 378, 220, 54, "#0c8f78"),
+-    makeText("fallback-end-text", "Return result", 184, 394, 172, "#0c8f78")
+-  ];
+-}
+-
+-export function FlowchartPreview({
+-  snapshot,
+-  title = "Algorithm flow",
+-  heightClass = "h-[420px]"
+-}: {
+-  snapshot: unknown;
+-  title?: string;
+-  heightClass?: string;
+-}) {
++export function FlowchartPreview({ snapshot, heightClass = "h-[420px]" }: { snapshot: unknown; heightClass?: string }) {
+   const [mounted, setMounted] = useState(false);
+   const { theme } = useTheme();
+   const normalized = useMemo(() => normalizeCanvasSnapshot(snapshot), [snapshot]);
+-  const sceneElements = normalized.sceneElements.length > 0 ? normalized.sceneElements : fallbackElements(title);
+   const initialData = {
+-    elements: sceneElements,
++    elements: normalized.sceneElements,
+     appState: {
+       ...normalized.appState,
+       viewModeEnabled: true
+@@ -116,11 +29,19 @@ export function FlowchartPreview({
+   }, []);
+ 
+   if (!mounted) {
+-    return <div className={`${heightClass} rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--background-strong)]`} />;
++    return <div className={`${heightClass} rounded-[28px] border border-[color:var(--border-soft)] bg-[color:var(--background-strong)]`} />;
++  }
++
++  if (normalized.sceneElements.length === 0) {
++    return (
++      <div className={`grid ${heightClass} place-items-center rounded-[28px] border border-dashed border-[color:var(--border-strong)] bg-[color:var(--background-strong)] text-sm text-[color:var(--text-secondary)]`}>
++        No flowchart snapshot was stored for this post.
++      </div>
++    );
+   }
+ 
+   return (
+-    <div className={`${heightClass} overflow-hidden rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--background-strong)] [&_.excalidraw]:bg-transparent [&_.excalidraw__canvas]:bg-transparent`}>
++    <div className={`${heightClass} overflow-hidden rounded-[28px] border border-[color:var(--border-soft)] bg-[color:var(--background-strong)] [&_.excalidraw]:bg-transparent [&_.excalidraw__canvas]:bg-transparent`}>
+       <Excalidraw
+         theme={theme}
+         viewModeEnabled
+diff --git a/components/community/LibraryFilters.tsx b/components/community/LibraryFilters.tsx
+index 5a32007..d27b0ce 100644
+--- a/components/community/LibraryFilters.tsx
++++ b/components/community/LibraryFilters.tsx
+@@ -10,20 +10,20 @@ export function LibraryFilters({
+   initialSort?: string;
+ }) {
+   return (
+-    <form className="grid gap-2 rounded-lg border border-[color:var(--border)] bg-[color:var(--surface)] p-2 md:grid-cols-[1fr_190px]">
++    <form className="grid gap-3 rounded-[1.5rem] border border-[color:var(--border-soft)] bg-[color:var(--surface)] p-4 shadow-[var(--shadow-soft)] md:grid-cols-[1fr_200px]">
+       <label className="relative">
+         <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--text-muted)]" />
+         <input
+           name="q"
+           defaultValue={initialQuery}
+           placeholder="Search titles, prompts, or algorithm ideas"
+-          className="h-10 w-full rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] pl-11 pr-4 text-sm text-[color:var(--text-primary)] outline-none focus:border-[color:var(--accent)]"
++          className="w-full rounded-[1rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] py-3 pl-11 pr-4 text-sm text-[color:var(--text-primary)] outline-none focus:border-[color:var(--accent)]"
+         />
+       </label>
+       <select
+         defaultValue={initialSort}
+         name="sort"
+-        className="h-10 rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-3 text-sm font-semibold text-[color:var(--text-primary)] outline-none"
++        className="rounded-[1rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-3 text-sm font-semibold text-[color:var(--text-primary)] outline-none"
+       >
+         <option>Latest</option>
+         <option>Most Upvoted</option>
+diff --git a/components/community/RemixButton.tsx b/components/community/RemixButton.tsx
+index b9b1501..a263334 100644
+--- a/components/community/RemixButton.tsx
++++ b/components/community/RemixButton.tsx
+@@ -39,7 +39,7 @@ export function RemixButton({ flowchartId, canResumeSession }: { flowchartId: st
+     <button
+       onClick={handleRemix}
+       disabled={isRemixing}
+-      className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[color:var(--border-strong)] bg-[color:var(--surface-elevated)] px-4 py-3 text-sm font-semibold text-[color:var(--text-primary)] transition duration-200 hover:-translate-y-0.5 hover:bg-[color:var(--surface-hover)] disabled:opacity-50"
++      className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[color:var(--border-strong)] bg-[color:var(--surface-elevated)] px-4 py-3 text-sm font-semibold text-[color:var(--text-primary)] transition duration-200 hover:-translate-y-0.5 hover:bg-[color:var(--surface-hover)] disabled:opacity-50"
+     >
+       {isRemixing ? "Importing to Workspace..." : canResumeSession ? "Resume this session" : "Remix into your workspace"}
+       {canResumeSession ? <ArrowRight className="h-4 w-4 text-[color:var(--accent)]" /> : <Copy className="h-4 w-4 text-[color:var(--accent)]" />}
+diff --git a/database.md b/database.md
+deleted file mode 100644
+index 4ff6c4b..0000000
+--- a/database.md
++++ /dev/null
+@@ -1,249 +0,0 @@
+-# Database Architecture
+-
+-Sketch2Code stores each visual algorithm as a durable workspace. The relational model keeps users, private flowcharts, public posts, votes, saves, comments, and remix sources separate enough to scale without losing the original board state.
+-
+-## Schema Overview
+-
+-The Prisma schema uses PostgreSQL.
+-
+-```prisma
+-User
+-Flowchart
+-CommunityPost
+-Comment
+-PostVote
+-Save
+-```
+-
+-## Tables
+-
+-### User
+-
+-Represents a Clerk-backed application user.
+-
+-Fields:
+-
+-- `id`: internal app id.
+-- `clerkId`: Clerk user id, unique.
+-- `name`: display name.
+-- `email`: email address, unique.
+-- `avatar`: optional profile image.
+-- `createdAt`: first sync time.
+-
+-Relationships:
+-
+-- One user has many flowcharts.
+-- One user has many saves.
+-- One user has many comments.
+-- One user has many votes.
+-
+-### Flowchart
+-
+-Represents a private or published workspace.
+-
+-Fields:
+-
+-- `id`: workspace id used by `/canvas/[id]`.
+-- `userId`: owner.
+-- `title`: user or generated title.
+-- `problem`: optional problem context.
+-- `language`: target generation language.
+-- `shapes`: serialized canvas snapshot.
+-- `generatedCode`: latest generated code.
+-- `isPublished`: whether the workspace is public.
+-- `createdAt`: creation time.
+-- `updatedAt`: last save time.
+-
+-Relationships:
+-
+-- Belongs to one user.
+-- Can have one community post.
+-
+-### CommunityPost
+-
+-Represents a public feed entry backed by a flowchart.
+-
+-Fields:
+-
+-- `id`: public post id.
+-- `flowchartId`: unique published workspace reference.
+-- `userId`: publisher id.
+-- `upvotes`: denormalized vote total.
+-- `views`: view count.
+-- `tags`: serialized tag array.
+-- `isVerified`: moderation or quality marker.
+-- `createdAt`: publish time.
+-
+-Relationships:
+-
+-- Belongs to one flowchart.
+-- Has many saves.
+-- Has many comments.
+-- Has many votes.
+-
+-### Comment
+-
+-Represents discussion on a public post.
+-
+-Fields:
+-
+-- `id`: comment id.
+-- `postId`: community post id.
+-- `userId`: author id.
+-- `body`: comment text.
+-- `createdAt`: comment time.
+-
+-Relationships:
+-
+-- Belongs to one post.
+-- Belongs to one user.
+-
+-### PostVote
+-
+-Represents a single user vote.
+-
+-Fields:
+-
+-- `id`: vote id.
+-- `postId`: community post id.
+-- `userId`: voter id.
+-- `value`: `1` for upvote, `-1` for downvote.
+-- `createdAt`: vote time.
+-
+-Constraint:
+-
+-- `@@unique([userId, postId])` prevents duplicate votes per user/post.
+-
+-### Save
+-
+-Represents a saved public artifact in a user profile.
+-
+-Fields:
+-
+-- `id`: save id.
+-- `userId`: saver id.
+-- `postId`: saved post id.
+-- `savedAt`: save time.
+-
+-Constraint:
+-
+-- `@@unique([userId, postId])` prevents duplicate saves.
+-
+-## Entity Relationships
+-
+-```text
+-User 1 -> many Flowchart
+-Flowchart 1 -> 0..1 CommunityPost
+-CommunityPost 1 -> many Comment
+-CommunityPost 1 -> many Save
+-CommunityPost 1 -> many PostVote
+-User 1 -> many Comment
+-User 1 -> many Save
+-User 1 -> many PostVote
+-```
+-
+-## Board Storage Structure
+-
+-`Flowchart.shapes` stores a serialized `CanvasSceneSnapshot`:
+-
+-```ts
+-interface CanvasSceneSnapshot {
+-  sceneElements: ReadonlyArray<Record<string, unknown>>;
+-  appState: Record<string, unknown>;
+-  files: Record<string, CanvasFileRecord>;
+-  shapes: FlowShape[];
+-  connections: CanvasConnection[];
+-}
+-```
+-
+-The important Excalidraw data is:
+-
+-- `sceneElements`: the visual objects rendered by Excalidraw.
+-- `appState`: viewport/background/view settings.
+-- `files`: uploaded image blobs referenced by Excalidraw.
+-
+-The local `shapes` and `connections` arrays are retained for app-level metadata and future trace features.
+-
+-## Excalidraw Snapshot Handling
+-
+-The workspace captures live scene data through the Excalidraw API:
+-
+-- `getSceneElements()`
+-- `getAppState()`
+-- `getFiles()`
+-
+-On save, these values are normalized and serialized into `Flowchart.shapes`.
+-
+-On restore, `normalizeCanvasSnapshot()` converts stored JSON back into initial data for Excalidraw.
+-
+-On community pages, `FlowchartPreview` renders the stored snapshot in read-only mode. If old seed data has no stored scene elements, the preview renders a generated algorithm board fallback so the feed never shows an empty artifact.
+-
+-## Feed Architecture
+-
+-The community feed is built from `CommunityPost` records joined to:
+-
+-- `flowchart`
+-- `flowchart.user`
+-- `saves`
+-- comment counts from `Comment`
+-
+-Sorting:
+-
+-- Latest: `createdAt desc`
+-- Most Upvoted: `upvotes desc`
+-- Most Saved: `saves._count desc`
+-
+-Search:
+-
+-- Flowchart title
+-- Flowchart problem context
+-
+-## Likes, Comments, Saves, and Remix
+-
+-Votes are stored as `PostVote` records and summarized into `CommunityPost.upvotes`.
+-
+-Comments belong to posts and users. The UI renders them as the public discussion layer on a workspace artifact.
+-
+-Saves are profile bookmarks. A saved post remains public and is shown in the user profile.
+-
+-Remix clones a public `Flowchart` into the current user's private library. The cloned workspace keeps:
+-
+-- title
+-- problem
+-- language
+-- Excalidraw snapshot
+-- generated code
+-
+-The clone starts unpublished.
+-
+-## Indexing Notes
+-
+-Current unique constraints:
+-
+-- `User.clerkId`
+-- `User.email`
+-- `CommunityPost.flowchartId`
+-- `PostVote.userId + postId`
+-- `Save.userId + postId`
+-
+-Recommended future indexes:
+-
+-- `Flowchart.userId`
+-- `Flowchart.updatedAt`
+-- `CommunityPost.createdAt`
+-- `CommunityPost.upvotes`
+-- `Comment.postId`
+-- `Save.userId`
+-- Full-text index over `Flowchart.title` and `Flowchart.problem`
+-
+-## Scalable Architecture Notes
+-
+-For early production, serialized Excalidraw snapshots in Postgres are acceptable. At higher scale:
+-
+-- Move large `files` blobs to object storage.
+-- Store thumbnail images for feed cards.
+-- Add a `remixSourceId` field on `Flowchart`.
+-- Add a `tags` table instead of serialized JSON.
+-- Add materialized counters for comments and saves.
+-- Add search indexing through Postgres full text, Meilisearch, Typesense, or Algolia.
+-- Use Redis for AI cache and hot feed metadata.
+diff --git a/vercel-deploy.md b/vercel-deploy.md
+deleted file mode 100644
+index 090cbbc..0000000
+--- a/vercel-deploy.md
++++ /dev/null
+@@ -1,160 +0,0 @@
+-# Vercel Deployment Guide
+-
+-This project is designed to deploy as a single Next.js application on Vercel. The old separate Express backend is not required for the main product flow.
+-
+-## 1. Prepare Services
+-
+-Create these services before deploying:
+-
+-- PostgreSQL database: Neon, Supabase, Vercel Postgres, or another hosted provider.
+-- Clerk application for auth.
+-- Google Gemini API key.
+-- Upstash Redis database, optional but recommended for AI caching.
+-
+-## 2. Vercel Project Setup
+-
+-1. Import the Git repository into Vercel.
+-2. Framework preset: `Next.js`.
+-3. Root directory: repository root.
+-4. Install command: `npm install`.
+-5. Build command: `npm run build`.
+-6. Output directory: leave default.
+-
+-## 3. Environment Variables
+-
+-Set these in Vercel Project Settings -> Environment Variables.
+-
+-Required:
+-
+-```bash
+-DATABASE_URL=postgresql://...
+-GEMINI_API_KEY=...
+-```
+-
+-Required for production auth:
+-
+-```bash
+-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+-CLERK_SECRET_KEY=sk_...
+-```
+-
+-Recommended:
+-
+-```bash
+-UPSTASH_REDIS_REST_URL=https://...
+-UPSTASH_REDIS_REST_TOKEN=...
+-```
+-
+-Optional:
+-
+-```bash
+-CLERK_WEBHOOK_SECRET=whsec_...
+-DISABLE_AUTH=false
+-```
+-
+-Do not set `DISABLE_AUTH=true` in production.
+-
+-## 4. Database Migration
+-
+-For first deployment, push the Prisma schema to the production database:
+-
+-```bash
+-npx prisma db push
+-```
+-
+-For a team production workflow, replace direct pushes with migrations:
+-
+-```bash
+-npx prisma migrate dev --name init
+-npx prisma migrate deploy
+-```
+-
+-Vercel runs `postinstall`, which executes:
+-
+-```bash
+-prisma generate
+-```
+-
+-## 5. Clerk Configuration
+-
+-Set the production app URL in Clerk:
+-
+-```text
+-https://your-domain.com
+-```
+-
+-Recommended redirect URLs:
+-
+-```text
+-https://your-domain.com
+-https://your-domain.com/sign-in
+-https://your-domain.com/sign-up
+-https://your-domain.com/profile
+-```
+-
+-Webhook endpoint:
+-
+-```text
+-https://your-domain.com/api/webhooks/clerk
+-```
+-
+-The app also upserts users during authenticated writes, so the webhook is useful but not the only user sync path.
+-
+-## 6. Runtime Guidance
+-
+-Use the default Node.js runtime for API routes that use Prisma and Gemini.
+-
+-Do not force Edge runtime for:
+-
+-- `/api/stream`
+-- `/api/analyze`
+-- `/api/flowcharts/*`
+-- `/api/community/*`
+-
+-Prisma works most reliably in Node runtime unless a dedicated edge-compatible driver setup is added.
+-
+-## 7. Optimization Settings
+-
+-Recommended Vercel settings:
+-
+-- Enable automatic deployments from main.
+-- Enable preview deployments for pull requests.
+-- Keep build cache enabled.
+-- Use the closest database region to the Vercel deployment region.
+-- Use Upstash Redis in the same broad region as Vercel.
+-
+-The UI avoids remote font downloads during build by using system font stacks.
+-
+-## 8. Image and Asset Notes
+-
+-Excalidraw snapshots are currently stored as serialized JSON. Uploaded Excalidraw files are stored inside the snapshot `files` object.
+-
+-For larger production usage:
+-
+-- Move large embedded images to object storage.
+-- Store generated thumbnails for community cards.
+-- Add `next/image` for any external marketing images.
+-- Configure `images.remotePatterns` if avatar providers or CDN image domains need optimization.
+-
+-## 9. Domain Setup
+-
+-1. Add your production domain in Vercel.
+-2. Configure DNS records as Vercel instructs.
+-3. Add the same domain to Clerk allowed origins and redirect URLs.
+-4. Update any marketing metadata URLs if needed.
+-
+-## 10. Production Checklist
+-
+-- `npm run type-check` passes.
+-- `npm run build` passes.
+-- `DATABASE_URL` points to production Postgres.
+-- `GEMINI_API_KEY` is valid.
+-- Clerk publishable and secret keys are production keys.
+-- `DISABLE_AUTH` is not enabled.
+-- Prisma schema is pushed or migrations deployed.
+-- Community feed loads published posts.
+-- Canvas save and restore work for an authenticated user.
+-- Publish, save, vote, comment, and remix routes work.
+-- Read-only Excalidraw previews render in feed and post pages.
+-- Light/dark theme toggle works.
+-- Mobile, laptop, and wide desktop layouts have no horizontal overflow.

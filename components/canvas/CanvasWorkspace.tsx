@@ -404,7 +404,7 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
                 <ChevronLeft className="h-4 w-4" />
               </button>
             ) : null}
-            
+
             <CanvasErrorBoundary>
               <FlowCanvas
                 selectedShape={selectedShape}
@@ -415,7 +415,7 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
                 onShapesChange={setShapes}
                 onConnectionsChange={setConnections}
                 onSceneChange={handleSceneChange}
-                onShapeComplete={() => {}}
+                onShapeComplete={() => { }}
                 onExcalidrawAPI={handleExcalidrawAPI}
               />
             </CanvasErrorBoundary>
