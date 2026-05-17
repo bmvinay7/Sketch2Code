@@ -211,8 +211,6 @@ select,
   --color-primary: var(--color-accent);
 }
 
-.excalidraw .layer-ui__wrapper {
-}
 
 @media (prefers-reduced-motion: no-preference) {
   .float-in {
