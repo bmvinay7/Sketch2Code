@@ -1,14 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { requireDatabaseUser } from "@/lib/auth-user";
-import { prisma } from "@/lib/prisma";
+import { createComment, listComments } from "@/lib/community-comments";
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
-  const comments = await prisma.comment.findMany({
-    where: { postId: params.id },
-    include: { user: { select: { name: true, avatar: true } } },
-    orderBy: { createdAt: "asc" }
-  });
+  const comments = await listComments(params.id);
   return NextResponse.json({ comments });
 }
 
@@ -25,14 +21,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const user = await requireDatabaseUser(userId);
   if (!user) return NextResponse.json({ error: "User not synced" }, { status: 409 });
 
-  const comment = await prisma.comment.create({
-    data: {
-      body: bodyText,
-      postId: params.id,
-      userId: user.id
-    },
-    include: { user: { select: { name: true, avatar: true } } }
-  });
+  const comment = await createComment(params.id, user.id, bodyText);
 
   return NextResponse.json({ comment });
 }

@@ -17,66 +17,73 @@ export interface FlowchartCardData {
   isVerified: boolean;
   createdAt: string;
   snapshot: unknown;
+  tags?: string[];
 }
 
 export function FlowchartCard({ item }: { item: FlowchartCardData }) {
   return (
     <Link
       href={`/community/${item.id}`}
-      className="group block rounded-[1.8rem] border border-[color:var(--border-soft)] bg-[color:var(--surface)] p-4 shadow-[var(--shadow-soft)] transition duration-200 hover:-translate-y-1 hover:border-[color:var(--border-strong)]"
+      className="group block rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4 hover:-translate-y-0.5 hover:border-[color:var(--color-dark-surface)]"
     >
-      <div className="grid gap-4 lg:grid-cols-[88px_minmax(0,1fr)]">
-        <div className="flex flex-row gap-3 lg:flex-col lg:items-center">
-          <div className="flex h-12 w-12 flex-col items-center justify-center rounded-[1rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-center">
-            <ThumbsUp className="h-4 w-4 text-[color:var(--accent)]" />
-            <span className="mt-1 text-xs font-bold text-[color:var(--text-primary)]">{item.upvotes}</span>
+      <div className="grid gap-4 md:grid-cols-[72px_minmax(0,1fr)]">
+        <div className="flex flex-row gap-2 md:flex-col md:items-center">
+          <div className="flex h-11 w-11 flex-col items-center justify-center rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-center">
+            <ThumbsUp className="h-4 w-4 text-[color:var(--color-accent)]" strokeWidth={1.5} />
+            <span className="mt-1 text-xs font-bold text-[color:var(--color-text-primary)]">{item.upvotes}</span>
           </div>
-          <div className="flex h-12 w-12 flex-col items-center justify-center rounded-[1rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-center">
-            <MessageSquare className="h-4 w-4 text-[color:var(--text-secondary)]" />
-            <span className="mt-1 text-xs font-bold text-[color:var(--text-primary)]">{item.comments}</span>
+          <div className="flex h-11 w-11 flex-col items-center justify-center rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-center">
+            <MessageSquare className="h-4 w-4 text-[color:var(--color-text-secondary)]" strokeWidth={1.5} />
+            <span className="mt-1 text-xs font-bold text-[color:var(--color-text-primary)]">{item.comments}</span>
           </div>
-          <div className="flex h-12 w-12 flex-col items-center justify-center rounded-[1rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-center">
-            <Bookmark className="h-4 w-4 text-[color:var(--text-secondary)]" />
-            <span className="mt-1 text-xs font-bold text-[color:var(--text-primary)]">{item.saves}</span>
+          <div className="flex h-11 w-11 flex-col items-center justify-center rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-center">
+            <Bookmark className="h-4 w-4 text-[color:var(--color-text-secondary)]" strokeWidth={1.5} />
+            <span className="mt-1 text-xs font-bold text-[color:var(--color-text-primary)]">{item.saves}</span>
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+          <div className="space-y-3">
           <div className="flex items-start gap-3">
             {item.authorAvatar ? (
-              <img src={item.authorAvatar} alt="" className="h-11 w-11 rounded-full border border-[color:var(--border-soft)] object-cover" />
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={item.authorAvatar} alt="" className="h-10 w-10 rounded-full border border-[color:var(--color-border)] object-cover" />
             ) : (
-              <div className="grid h-11 w-11 place-items-center rounded-full border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-sm font-semibold text-[color:var(--text-secondary)]">
+              <div className="grid h-10 w-10 place-items-center rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm font-semibold text-[color:var(--color-text-secondary)]">
                 {item.authorName.slice(0, 1).toUpperCase()}
               </div>
             )}
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="truncate text-sm font-semibold text-[color:var(--text-primary)]">{item.authorName}</p>
-                <span className="text-xs text-[color:var(--text-muted)]">{item.authorUsername}</span>
-                {item.isVerified ? <CheckCircle2 className="h-4 w-4 text-[color:var(--accent)]" /> : null}
+                <p className="truncate text-sm font-semibold text-[color:var(--color-text-primary)]">{item.authorName}</p>
+                <span className="text-xs text-[color:var(--color-text-secondary)]">{item.authorUsername}</span>
+                {item.isVerified ? <CheckCircle2 className="h-4 w-4 text-[color:var(--color-accent)]" strokeWidth={1.5} /> : null}
               </div>
-              <p className="mt-1 text-xs text-[color:var(--text-muted)]">{item.createdAt}</p>
+              <p className="mt-1 text-xs text-[color:var(--color-text-secondary)]">{item.createdAt}</p>
             </div>
           </div>
 
           <div>
-            <h2 className="text-xl font-semibold tracking-[-0.03em] text-[color:var(--text-primary)]">{item.title}</h2>
+            <h2 className="text-xl font-semibold tracking-[-0.02em] text-[color:var(--color-text-primary)]">{item.title}</h2>
             {item.problem ? (
-              <p className="mt-2 line-clamp-3 text-sm leading-7 text-[color:var(--text-secondary)]">{item.problem}</p>
+              <p className="mt-2 line-clamp-2 text-sm leading-6 text-[color:var(--color-text-secondary)]">{item.problem}</p>
             ) : null}
           </div>
 
-          <div className="overflow-hidden rounded-[1.25rem] border border-[color:var(--border-soft)]">
-            <FlowchartPreview snapshot={item.snapshot} heightClass="h-[220px]" />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 text-xs text-[color:var(--text-secondary)]">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--border-soft)] px-3 py-1.5">
-              <GitCommitHorizontal className="h-3.5 w-3.5" />
+          <div className="flex flex-wrap items-center gap-2 text-xs text-[color:var(--color-text-secondary)]">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--color-border)] px-3 py-1.5">
+              <GitCommitHorizontal className="h-3.5 w-3.5" strokeWidth={1.5} />
               {item.shapeCount} elements
             </span>
-            <span className="rounded-full border border-[color:var(--border-soft)] px-3 py-1.5">{item.views} views</span>
+            <span className="rounded-full border border-[color:var(--color-border)] px-3 py-1.5">{item.views} views</span>
+            {(item.tags ?? []).slice(0, 3).map((tag) => (
+              <span key={tag} className="rounded-full border border-[color:var(--color-border)] px-3 py-1.5">{tag}</span>
+            ))}
+          </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border)]">
+            <FlowchartPreview snapshot={item.snapshot} heightClass="h-[160px]" />
           </div>
         </div>
       </div>

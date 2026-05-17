@@ -36,7 +36,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       data: {
         userId: user.id,
         flowchartId: flowchart.id,
-        tags: "[]"
+        tags: []
       }
     })
   ]);

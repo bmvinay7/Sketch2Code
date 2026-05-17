@@ -17,7 +17,7 @@ export function ThemeToggle({ className }: { className?: string }) {
         className
       )}
     >
-      {theme === "dark" ? <SunMedium className="h-4.5 w-4.5" /> : <MoonStar className="h-4.5 w-4.5" />}
+      {theme === "dark" ? <SunMedium className="h-4 w-4" strokeWidth={1.5} /> : <MoonStar className="h-4 w-4" strokeWidth={1.5} />}
     </button>
   );
 }

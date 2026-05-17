@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -153,32 +153,27 @@ async function main() {
         userId: author.id,
         upvotes: upvotesCount,
         views: Math.floor(Math.random() * 500) + 50,
-        tags: JSON.stringify(["algorithm", "computer-science"])
+        tags: ["algorithm", "computer-science"]
       }
     });
 
     for (let i = 0; i < Math.min(upvotesCount, dummyUsers.length); i++) {
       if (Math.random() > 0.5) {
-        await prisma.postVote.create({
-          data: {
-            postId: post.id,
-            userId: dummyUsers[i].id,
-            value: 1
-          }
-        });
+        await prisma.$executeRaw(Prisma.sql`
+          INSERT INTO "PostVote" ("id", "postId", "userId", "value", "createdAt")
+          VALUES (${crypto.randomUUID()}, ${post.id}, ${dummyUsers[i].id}, 1, NOW())
+          ON CONFLICT ("userId", "postId") DO NOTHING
+        `);
       }
     }
 
     const numComments = Math.floor(Math.random() * 4) + 1;
     for (let i = 0; i < numComments; i++) {
       const commenter = dummyUsers[Math.floor(Math.random() * dummyUsers.length)];
-      await prisma.comment.create({
-        data: {
-          postId: post.id,
-          userId: commenter.id,
-          body: realisticComments[Math.floor(Math.random() * realisticComments.length)]
-        }
-      });
+      await prisma.$executeRaw(Prisma.sql`
+        INSERT INTO "Comment" ("id", "postId", "userId", "body", "createdAt")
+        VALUES (${crypto.randomUUID()}, ${post.id}, ${commenter.id}, ${realisticComments[Math.floor(Math.random() * realisticComments.length)]}, NOW())
+      `);
     }
 
     console.log(`Created: ${algo.title} by ${author.name}`);

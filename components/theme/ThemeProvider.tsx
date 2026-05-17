@@ -14,6 +14,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 const STORAGE_KEY = "sketchcode-theme";
 
 function applyTheme(theme: Theme) {
+  document.documentElement.classList.toggle("dark", theme === "dark");
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
 }

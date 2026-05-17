@@ -1,199 +1,100 @@
-import Link from "next/link";
-import { Bookmark, Globe2, Layers3, Library, Share2 } from "lucide-react";
 import { currentUser } from "@clerk/nextjs/server";
-import { FlowchartPreview } from "@/components/community/FlowchartPreview";
+import { notFound } from "next/navigation";
+import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { requireDatabaseUser } from "@/lib/auth-user";
-import { buildCommunityUsername, buildDisplayHandle } from "@/lib/community";
 import { prisma } from "@/lib/prisma";
 
-export default async function ProfilePage() {
-  const user = await currentUser();
-  const appUser = user ? await requireDatabaseUser(user.id) : null;
-  const profile = appUser
-    ? await prisma.user.findUnique({
-      where: { id: appUser.id },
-      include: {
-        flowcharts: {
-          include: { communityPost: true },
-          orderBy: { updatedAt: "desc" },
-          take: 6
-        },
-        saves: {
-          include: {
-            post: {
-              include: { flowchart: { include: { user: true } } }
-            }
-          },
-          orderBy: { savedAt: "desc" },
-          take: 6
-        }
-      }
-    })
-    : null;
+function formatDate(date: Date) {
+  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(date);
+}
 
-  const publicPosts = await prisma.communityPost.findMany({
-    include: { flowchart: { include: { user: true } }, saves: true },
-    orderBy: { createdAt: "desc" },
-    take: 8
+export default async function ProfilePage() {
+  const clerkUser = await currentUser();
+  if (!clerkUser) notFound();
+
+  const appUser = await requireDatabaseUser(clerkUser.id);
+  if (!appUser) notFound();
+
+  const profile = await prisma.user.findUnique({
+    where: { id: appUser.id },
+    include: {
+      flowcharts: {
+        include: { communityPost: true },
+        orderBy: { updatedAt: "desc" },
+        take: 24
+      }
+    }
   });
 
-  const publishedPosts = profile?.flowcharts.filter((flowchart) => flowchart.communityPost) ?? [];
+  if (!profile) notFound();
+
+  const published = profile.flowcharts.filter((flowchart) => flowchart.communityPost);
 
   return (
-    <section className="px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1440px] space-y-4">
-        <div className="panel rounded-[2rem] px-6 py-7">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+    <section className="px-[clamp(24px,5vw,60px)] py-8">
+      <div className="mx-auto max-w-[1100px] space-y-5">
+        <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
-              {user?.imageUrl ? (
-                <img src={user.imageUrl} alt="" className="h-20 w-20 rounded-full border border-[color:var(--border-soft)] object-cover" />
+              {profile.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.avatar} alt="" className="h-20 w-20 rounded-full border border-[color:var(--color-border)] object-cover" />
               ) : (
-                <div className="grid h-20 w-20 place-items-center rounded-full border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] text-xl font-semibold text-[color:var(--text-secondary)]">
-                  {(user?.fullName || "Y").slice(0, 1).toUpperCase()}
+                <div className="grid h-20 w-20 place-items-center rounded-full border border-[color:var(--color-border)] text-xl font-semibold text-[color:var(--color-text-secondary)]">
+                  {profile.name.slice(0, 1).toUpperCase()}
                 </div>
               )}
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--accent)]">Your library</p>
-                <h1 className="mt-2 font-display text-[clamp(2.6rem,5vw,4.5rem)] leading-[0.96] tracking-[-0.06em] text-[color:var(--text-primary)]">
-                  {user?.fullName ?? "Workspace profile"}
+                <p className="font-mono text-xs font-semibold uppercase tracking-[0.06em] text-[color:var(--color-accent)]">Your profile</p>
+                <h1 className="mt-2 font-display text-[clamp(2.2rem,5vw,3.4rem)] font-bold leading-[1.05] tracking-[-0.02em] text-[color:var(--color-text-primary)]">
+                  {profile.name}
                 </h1>
-                <p className="mt-3 max-w-[66ch] text-base leading-8 text-[color:var(--text-secondary)]">
-                  Your private drafts, saved community references, and published study canvases live together here. Public community posts from everyone also stay visible below because the archive is a shared learning surface.
-                </p>
+                <p className="mt-2 text-[color:var(--color-text-secondary)]">{profile.email}</p>
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-[1.3rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-4 py-3">
-                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[color:var(--text-muted)]">Drafts</p>
-                <p className="mt-2 text-2xl font-semibold text-[color:var(--text-primary)]">{profile?.flowcharts.length ?? 0}</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-xl border border-[color:var(--color-border)] px-4 py-3">
+                <p className="font-mono text-xs uppercase tracking-[0.06em] text-[color:var(--color-text-secondary)]">Saved</p>
+                <p className="mt-1 text-2xl font-semibold">{profile.flowcharts.length}</p>
               </div>
-              <div className="rounded-[1.3rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-4 py-3">
-                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[color:var(--text-muted)]">Published</p>
-                <p className="mt-2 text-2xl font-semibold text-[color:var(--text-primary)]">{publishedPosts.length}</p>
+              <div className="rounded-xl border border-[color:var(--color-border)] px-4 py-3">
+                <p className="font-mono text-xs uppercase tracking-[0.06em] text-[color:var(--color-text-secondary)]">Posts</p>
+                <p className="mt-1 text-2xl font-semibold">{published.length}</p>
               </div>
-              <div className="rounded-[1.3rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] px-4 py-3">
-                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[color:var(--text-muted)]">Saved</p>
-                <p className="mt-2 text-2xl font-semibold text-[color:var(--text-primary)]">{profile?.saves.length ?? 0}</p>
+              <div className="rounded-xl border border-[color:var(--color-border)] px-4 py-3">
+                <p className="font-mono text-xs uppercase tracking-[0.06em] text-[color:var(--color-text-secondary)]">Activity</p>
+                <p className="mt-1 text-2xl font-semibold">{profile.flowcharts.length + published.length}</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-3">
-          <section className="panel rounded-[1.8rem] p-5 xl:col-span-2">
-            <div className="flex items-center gap-3">
-              <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--accent-soft)] text-[color:var(--accent)]">
-                <Library className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-[color:var(--text-primary)]">My workspaces</h2>
-                <p className="text-sm text-[color:var(--text-secondary)]">Private drafts and active learning sessions.</p>
-              </div>
-            </div>
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              {profile?.flowcharts.length ? (
-                profile.flowcharts.map((flowchart) => (
-                  <Link key={flowchart.id} href={`/canvas/${flowchart.id}`} className="rounded-[1.4rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 transition duration-200 hover:-translate-y-1">
-                    <p className="text-lg font-semibold text-[color:var(--text-primary)]">{flowchart.title}</p>
-                    <p className="mt-2 text-sm leading-7 text-[color:var(--text-secondary)]">{flowchart.problem || "Saved session"}</p>
-                    <div className="mt-4 overflow-hidden rounded-[1rem] border border-[color:var(--border-soft)]">
-                      <FlowchartPreview snapshot={flowchart.shapes} heightClass="h-[220px]" />
-                    </div>
-                  </Link>
-                ))
-              ) : (
-                <div className="rounded-[1.4rem] border border-dashed border-[color:var(--border-strong)] p-8 text-center text-sm text-[color:var(--text-secondary)]">
-                  No workspaces saved yet.
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section className="space-y-4">
-            <div className="panel rounded-[1.8rem] p-5">
-              <div className="flex items-center gap-3">
-                <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--accent-soft)] text-[color:var(--accent)]">
-                  <Share2 className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-[color:var(--text-primary)]">Published by you</h2>
-                  <p className="text-sm text-[color:var(--text-secondary)]">Anything you pushed to the public feed.</p>
-                </div>
-              </div>
-              <div className="mt-5 space-y-3">
-                {publishedPosts.length ? (
-                  publishedPosts.map((flowchart) => (
-                    <Link key={flowchart.id} href={`/community/${flowchart.communityPost?.id}`} className="block rounded-[1.2rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 transition duration-200 hover:-translate-y-1">
-                      <p className="font-semibold text-[color:var(--text-primary)]">{flowchart.title}</p>
-                      <p className="mt-2 text-sm text-[color:var(--text-secondary)]">{flowchart.problem || "Published flowchart"}</p>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="rounded-[1.2rem] border border-dashed border-[color:var(--border-strong)] p-5 text-sm text-[color:var(--text-secondary)]">
-                    Nothing published yet.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="panel rounded-[1.8rem] p-5">
-              <div className="flex items-center gap-3">
-                <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--accent-soft)] text-[color:var(--accent)]">
-                  <Bookmark className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-[color:var(--text-primary)]">Saved from community</h2>
-                  <p className="text-sm text-[color:var(--text-secondary)]">References you bookmarked.</p>
-                </div>
-              </div>
-              <div className="mt-5 space-y-3">
-                {profile?.saves.length ? (
-                  profile.saves.map((save) => (
-                    <Link key={save.id} href={`/community/${save.postId}`} className="block rounded-[1.2rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 transition duration-200 hover:-translate-y-1">
-                      <p className="font-semibold text-[color:var(--text-primary)]">{save.post.flowchart.title}</p>
-                      <p className="mt-2 text-sm text-[color:var(--text-secondary)]">
-                        {buildDisplayHandle(save.post.flowchart.user.name, save.post.flowchart.user.email)} · {buildCommunityUsername(save.post.flowchart.user.name, save.post.flowchart.user.email)}
-                      </p>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="rounded-[1.2rem] border border-dashed border-[color:var(--border-strong)] p-5 text-sm text-[color:var(--text-secondary)]">
-                    Nothing saved yet.
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <section className="panel rounded-[1.8rem] p-5">
-          <div className="flex items-center gap-3">
-            <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--accent-soft)] text-[color:var(--accent)]">
-              <Globe2 className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-[color:var(--text-primary)]">Public community feed</h2>
-              <p className="text-sm text-[color:var(--text-secondary)]">Visible here for every user because this archive is public space.</p>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {publicPosts.map((post) => (
-              <Link key={post.id} href={`/community/${post.id}`} className="rounded-[1.35rem] border border-[color:var(--border-soft)] bg-[color:var(--surface-elevated)] p-4 transition duration-200 hover:-translate-y-1">
-                <div className="flex items-center gap-2 text-xs text-[color:var(--text-muted)]">
-                  <Layers3 className="h-3.5 w-3.5" />
-                  {buildDisplayHandle(post.flowchart.user.name, post.flowchart.user.email)}
-                </div>
-                <p className="mt-3 text-lg font-semibold text-[color:var(--text-primary)]">{post.flowchart.title}</p>
-                <p className="mt-2 line-clamp-2 text-sm leading-6 text-[color:var(--text-secondary)]">{post.flowchart.problem || "Public flowchart"}</p>
-                <div className="mt-4 overflow-hidden rounded-[1rem] border border-[color:var(--border-soft)]">
-                  <FlowchartPreview snapshot={post.flowchart.shapes} heightClass="h-[220px]" />
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
+        <ProfileTabs
+          ownProfile
+          savedCanvases={profile.flowcharts.map((flowchart) => ({
+            id: flowchart.id,
+            title: flowchart.title,
+            problem: flowchart.problem,
+            language: flowchart.language,
+            updatedAt: formatDate(flowchart.updatedAt),
+            shapes: flowchart.shapes
+          }))}
+          communityPosts={published.map((flowchart) => ({
+            id: flowchart.communityPost!.id,
+            title: flowchart.title,
+            problem: flowchart.problem,
+            language: flowchart.language,
+            createdAt: formatDate(flowchart.communityPost!.createdAt),
+            shapes: flowchart.shapes,
+            canDelete: true
+          }))}
+          activity={[
+            `${profile.flowcharts.length} saved canvases in your library`,
+            `${published.length} public community posts`,
+            "Private drafts stay hidden until you publish them"
+          ]}
+        />
       </div>
     </section>
   );

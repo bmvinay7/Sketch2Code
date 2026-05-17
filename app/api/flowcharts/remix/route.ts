@@ -24,7 +24,7 @@ export async function POST(request: Request) {
       title: `${original.title} (Remix)`,
       problem: original.problem,
       language: original.language,
-      shapes: original.shapes,
+      shapes: original.shapes as never,
       generatedCode: original.generatedCode,
       isPublished: false
     }
