@@ -106,7 +106,7 @@ export function FlowCanvas(props: FlowCanvasProps) {
   }, []);
 
   if (!mounted) {
-    return <div className="h-full min-h-[420px] flex-1 bg-[color:var(--background-strong)]" />;
+    return <div className="h-full min-h-[420px] w-full flex-1 bg-[color:var(--background-strong)]" />;
   }
 
   return (

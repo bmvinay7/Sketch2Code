@@ -1,8 +1,10 @@
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 
-const ClerkSignUp = dynamic(() => import("@/components/auth/ClerkAuthWidgets").then((mod) => mod.ClerkSignUp), {
+const ClerkSignUp = nextDynamic(() => import("@/components/auth/ClerkAuthWidgets").then((mod) => mod.ClerkSignUp), {
   ssr: false
 });
+
+export const dynamic = "force-dynamic";
 
 export default function SignUpPage() {
   if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {

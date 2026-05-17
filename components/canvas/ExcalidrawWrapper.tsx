@@ -43,11 +43,12 @@ export default function ExcalidrawWrapper({ initialData, onExcalidrawAPI, onScen
   }, [onExcalidrawAPI]);
 
   return (
-    <div className="h-full [&_.excalidraw]:bg-transparent [&_.excalidraw__canvas]:bg-transparent">
+    <div className="h-full min-h-0 w-full touch-none [&_.excalidraw]:h-full [&_.excalidraw]:bg-transparent [&_.excalidraw__canvas]:bg-transparent [&_.excalidraw__canvas]:pointer-events-auto">
       <Excalidraw
         excalidrawAPI={handleAPI}
         theme={theme}
         initialData={initialData as any}
+        autoFocus
         UIOptions={{
           canvasActions: {
             changeViewBackgroundColor: false,

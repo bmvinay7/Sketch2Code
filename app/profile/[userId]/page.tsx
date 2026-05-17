@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(date);
 }

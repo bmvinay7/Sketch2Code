@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
-import { Blocks, Github, UsersRound } from "lucide-react";
+import { Blocks, Github, Library, UserRound, UsersRound } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { cn } from "@/lib/utils";
@@ -10,16 +10,16 @@ import { cn } from "@/lib/utils";
 const links = [
   { href: "/canvas/new", label: "Workspace" },
   { href: "/community", label: "Community", icon: UsersRound },
+  { href: "/profile", label: "Profile", icon: UserRound },
 ];
 
-export function Navbar() {
+export function Navbar({ hasClerk }: { hasClerk?: boolean }) {
   const pathname = usePathname();
-  const hasClerk = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
   const isLanding = pathname === "/";
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-[color:var(--color-border)] bg-[color:var(--color-surface)]">
-      <div className="mx-auto flex h-[60px] max-w-[1100px] items-center justify-between gap-3 px-[clamp(24px,5vw,60px)]">
+    <header className="fixed inset-x-0 top-0 z-50 px-[clamp(14px,4vw,60px)] pt-3">
+      <div className="mx-auto flex h-[58px] max-w-[1440px] items-center justify-between gap-3 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-4 shadow-[0_18px_60px_rgba(0,0,0,0.08)]">
         {/* ─── Logo ─── */}
         <Link href="/" className="flex min-w-0 items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-surface)]">
@@ -34,7 +34,7 @@ export function Navbar() {
         </Link>
 
         {/* ─── Nav links ─── */}
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center rounded-full bg-[color:var(--color-bg)] p-1 md:flex">
           {links.map((link) => {
             const segment = link.href.split("/")[1];
             const isActive = pathname.startsWith(segment ? `/${segment}` : link.href);
@@ -43,8 +43,8 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "text-sm font-medium text-[color:var(--color-text-primary)] opacity-70 transition-opacity duration-150 hover:opacity-100",
-                  isActive && "opacity-100"
+                  "rounded-full px-4 py-2 text-sm font-semibold text-[color:var(--color-text-secondary)] transition-opacity duration-150 hover:text-[color:var(--color-text-primary)]",
+                  isActive && "bg-[color:var(--color-surface)] text-[color:var(--color-text-primary)] shadow-sm"
                 )}
               >
                 {link.label}
@@ -56,6 +56,13 @@ export function Navbar() {
         {/* ─── Right actions ─── */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          <Link
+            href="/profile"
+            className="hidden h-10 items-center gap-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-4 text-sm font-semibold text-[color:var(--color-text-primary)] hover:border-[color:var(--color-text-primary)] sm:inline-flex"
+          >
+            <Library className="h-4 w-4 text-[color:var(--color-accent)]" strokeWidth={1.5} />
+            Library
+          </Link>
 
           {/* GitHub badge — ghost button */}
           <a

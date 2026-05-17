@@ -24,26 +24,26 @@ export function FlowchartCard({ item }: { item: FlowchartCardData }) {
   return (
     <Link
       href={`/community/${item.id}`}
-      className="group block rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4 hover:-translate-y-0.5 hover:border-[color:var(--color-dark-surface)]"
+      className="group block rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-3 hover:-translate-y-0.5 hover:border-[color:var(--color-dark-surface)]"
     >
-      <div className="grid gap-4 md:grid-cols-[72px_minmax(0,1fr)]">
-        <div className="flex flex-row gap-2 md:flex-col md:items-center">
-          <div className="flex h-11 w-11 flex-col items-center justify-center rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-center">
+      <div className="grid gap-3 md:grid-cols-[56px_minmax(0,1fr)]">
+        <div className="flex flex-row gap-2 rounded-xl bg-[color:var(--color-bg)] p-2 md:flex-col md:items-center">
+          <div className="flex h-10 w-10 flex-col items-center justify-center rounded-lg text-center">
             <ThumbsUp className="h-4 w-4 text-[color:var(--color-accent)]" strokeWidth={1.5} />
             <span className="mt-1 text-xs font-bold text-[color:var(--color-text-primary)]">{item.upvotes}</span>
           </div>
-          <div className="flex h-11 w-11 flex-col items-center justify-center rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-center">
+          <div className="flex h-10 w-10 flex-col items-center justify-center rounded-lg text-center">
             <MessageSquare className="h-4 w-4 text-[color:var(--color-text-secondary)]" strokeWidth={1.5} />
             <span className="mt-1 text-xs font-bold text-[color:var(--color-text-primary)]">{item.comments}</span>
           </div>
-          <div className="flex h-11 w-11 flex-col items-center justify-center rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-center">
+          <div className="flex h-10 w-10 flex-col items-center justify-center rounded-lg text-center">
             <Bookmark className="h-4 w-4 text-[color:var(--color-text-secondary)]" strokeWidth={1.5} />
             <span className="mt-1 text-xs font-bold text-[color:var(--color-text-primary)]">{item.saves}</span>
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
-          <div className="space-y-3">
+        <div className="space-y-4">
+          <div className="space-y-3 px-1">
           <div className="flex items-start gap-3">
             {item.authorAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -82,8 +82,8 @@ export function FlowchartCard({ item }: { item: FlowchartCardData }) {
           </div>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border)]">
-            <FlowchartPreview snapshot={item.snapshot} heightClass="h-[160px]" />
+          <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-bg)]">
+            <FlowchartPreview snapshot={item.snapshot} heightClass="h-[260px]" />
           </div>
         </div>
       </div>

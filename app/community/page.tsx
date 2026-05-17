@@ -6,6 +6,8 @@ import { normalizeCanvasSnapshot } from "@/lib/flowcharts";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 function parseTags(value: unknown) {
   if (Array.isArray(value)) return value.map(String);
   if (typeof value !== "string") return [];

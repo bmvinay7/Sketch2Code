@@ -4,6 +4,8 @@ import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { requireDatabaseUser } from "@/lib/auth-user";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(date);
 }

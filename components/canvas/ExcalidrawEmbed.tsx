@@ -11,6 +11,46 @@ const Excalidraw = dynamic(
   { ssr: false }
 );
 
+function getElementNumber(element: Record<string, unknown>, key: string) {
+  const value = element[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function getPreviewAppState(elements: ReadonlyArray<Record<string, unknown>>, appState: Record<string, unknown>) {
+  if (elements.length === 0) return appState;
+
+  const bounds = elements.reduce<{ minX: number; minY: number; maxX: number; maxY: number }>(
+    (current, element) => {
+      const x = getElementNumber(element, "x");
+      const y = getElementNumber(element, "y");
+      const width = Math.max(getElementNumber(element, "width"), 40);
+      const height = Math.max(getElementNumber(element, "height"), 28);
+
+      return {
+        minX: Math.min(current.minX, x),
+        minY: Math.min(current.minY, y),
+        maxX: Math.max(current.maxX, x + width),
+        maxY: Math.max(current.maxY, y + height)
+      };
+    },
+    { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
+  );
+
+  const sceneWidth = Math.max(bounds.maxX - bounds.minX, 1);
+  const sceneHeight = Math.max(bounds.maxY - bounds.minY, 1);
+  const zoom = Math.min(0.82, Math.max(0.34, Math.min(720 / sceneWidth, 320 / sceneHeight)));
+
+  return {
+    ...appState,
+    scrollX: 28 - bounds.minX * zoom,
+    scrollY: 28 - bounds.minY * zoom,
+    zoom: { value: zoom },
+    viewModeEnabled: true,
+    zenModeEnabled: true,
+    gridSize: null
+  };
+}
+
 export function ExcalidrawEmbed({
   scene,
   height = "420px",
@@ -25,12 +65,7 @@ export function ExcalidrawEmbed({
   const normalized = useMemo(() => normalizeCanvasSnapshot(scene), [scene]);
   const initialData = {
     elements: normalized.sceneElements,
-    appState: {
-      ...normalized.appState,
-      viewModeEnabled: true,
-      zenModeEnabled: true,
-      gridSize: null
-    },
+    appState: getPreviewAppState(normalized.sceneElements, normalized.appState),
     files: normalized.files
   } as unknown;
 

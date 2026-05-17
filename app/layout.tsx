@@ -33,20 +33,25 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const hasClerkProvider = Boolean(
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
+      process.env.CLERK_SECRET_KEY &&
+      process.env.DISABLE_AUTH !== "true"
+  );
   const content = (
     <html lang="en" className="dark" data-theme="dark" suppressHydrationWarning>
       <body className={`${syne.variable} ${dmSans.variable} ${jetBrainsMono.variable} font-body antialiased`}>
         <ThemeProvider>
           <div className="ambient-backdrop" />
           <div className="grain-overlay" />
-          <Navbar />
-          <main className="relative z-10 pt-[60px]">{children}</main>
+          <Navbar hasClerk={hasClerkProvider} />
+          <main className="relative z-10 pt-[84px]">{children}</main>
         </ThemeProvider>
       </body>
     </html>
   );
 
-  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+  if (!hasClerkProvider) {
     return content;
   }
 

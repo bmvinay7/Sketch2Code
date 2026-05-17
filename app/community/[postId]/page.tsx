@@ -10,8 +10,10 @@ import { buildCommunityUsername, buildDisplayHandle } from "@/lib/community";
 import { listComments } from "@/lib/community-comments";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function CommunityPostPage({ params }: { params: { postId: string } }) {
-  const session = await auth();
+  const session = process.env.DISABLE_AUTH === "true" ? { userId: null } : await auth();
   const viewerPromise = session.userId ? prisma.user.findUnique({ where: { clerkId: session.userId } }) : Promise.resolve(null);
 
   const [post, viewer, comments] = await Promise.all([

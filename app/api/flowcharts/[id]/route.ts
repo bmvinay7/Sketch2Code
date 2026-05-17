@@ -13,6 +13,9 @@ interface FlowchartBody {
 }
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
+  if (process.env.DISABLE_AUTH === "true") {
+    return NextResponse.json({ error: "Auth disabled" }, { status: 401 });
+  }
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -24,6 +27,9 @@ export async function GET(_request: Request, { params }: { params: { id: string 
 }
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  if (process.env.DISABLE_AUTH === "true") {
+    return NextResponse.json({ error: "Auth disabled" }, { status: 401 });
+  }
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

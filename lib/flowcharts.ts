@@ -14,7 +14,14 @@ function titleCase(value: string) {
 }
 
 export function normalizeCanvasSnapshot(value: unknown): CanvasSceneSnapshot {
-  const record = asRecord(value);
+  const parsedValue = typeof value === "string" ? (() => {
+    try {
+      return JSON.parse(value) as unknown;
+    } catch {
+      return null;
+    }
+  })() : value;
+  const record = asRecord(parsedValue);
   const shapes = Array.isArray(record?.shapes) ? (record.shapes as FlowShape[]) : [];
   const connections = Array.isArray(record?.connections) ? (record.connections as CanvasConnection[]) : [];
   const sceneElements = Array.isArray(record?.sceneElements)
