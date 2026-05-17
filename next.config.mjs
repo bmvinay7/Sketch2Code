@@ -9,7 +9,6 @@ const nextConfig = {
     ]
   },
   experimental: {
-    serverComponentsExternalPackages: ["@prisma/client"],
     turbo: {
       resolveAlias: {
         canvas: "./lib/canvas-empty.ts"

@@ -153,7 +153,7 @@ async function main() {
         userId: author.id,
         upvotes: upvotesCount,
         views: Math.floor(Math.random() * 500) + 50,
-        tags: ["algorithm", "computer-science"]
+        tags: JSON.stringify(["algorithm", "computer-science"])
       }
     });
 

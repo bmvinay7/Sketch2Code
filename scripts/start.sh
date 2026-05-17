@@ -17,7 +17,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 # ─── Step 1: Load env ──────────────────────────────────────────────
-echo -e "${CYAN}[1/5] Loading environment...${NC}"
+echo -e "${CYAN}[1/4] Loading environment...${NC}"
 if [ -f "$ROOT_DIR/.env.local" ]; then
   export $(grep -v '^#' "$ROOT_DIR/.env.local" | grep -v '^$' | xargs)
   echo -e "  ${GREEN}✓${NC} .env.local loaded"
@@ -26,9 +26,9 @@ else
 fi
 
 # ─── Step 2: Prisma ────────────────────────────────────────────────
-echo -e "${CYAN}[2/5] Syncing database...${NC}"
+echo -e "${CYAN}[2/4] Syncing database...${NC}"
 (cd "$ROOT_DIR" && npx prisma db push --skip-generate 2>/dev/null && npx prisma generate 2>/dev/null)
-echo -e "  ${GREEN}✓${NC} SQLite database ready"
+echo -e "  ${GREEN}✓${NC} Database ready"
 
 # ─── Step 3: Verify Gemini ─────────────────────────────────────────
 echo -e "${CYAN}[3/4] Verifying Gemini configuration${NC}"
@@ -51,11 +51,11 @@ else
   fi
 fi
 
-# ─── Step 4: Start frontend ────────────────────────────────────────
-echo -e "${CYAN}[4/4] Starting frontend on http://localhost:3000${NC}"
+# ─── Step 4: Start application ────────────────────────────────────────
+echo -e "${CYAN}[4/4] Starting Sketch2Code application...${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}  Sketch2Code is ready!${NC}"
-echo -e "  Frontend → ${CYAN}http://localhost:3000${NC}"
+echo -e "  App → ${CYAN}http://localhost:3000${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 (cd "$ROOT_DIR" && rm -rf .next && npm run dev) &
 
