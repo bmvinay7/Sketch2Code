@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       shapes: JSON.stringify(body.shapes),
       generatedCode: body.generatedCode,
       isPublished: true,
-      communityPost: { create: { userId: user.id, tags: body.tags ?? [] } }
+      communityPost: { create: { userId: user.id, tags: JSON.stringify(body.tags ?? []) } }
     },
     include: { communityPost: true }
   });

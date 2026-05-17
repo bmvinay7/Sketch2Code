@@ -212,7 +212,6 @@ select,
 }
 
 .excalidraw .layer-ui__wrapper {
-  background: var(--color-surface);
 }
 
 @media (prefers-reduced-motion: no-preference) {
