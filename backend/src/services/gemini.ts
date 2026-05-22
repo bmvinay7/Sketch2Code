@@ -13,8 +13,8 @@ const MODEL_FALLBACK_CHAIN = [
 ];
 
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
-const MAX_RETRIES_PER_MODEL = 2;
-const INITIAL_BACKOFF_MS = 600;
+const MAX_RETRIES_PER_MODEL = 3;
+const INITIAL_BACKOFF_MS = 500;
 
 let genAI: GoogleGenerativeAI | null = null;
 const modelCache = new Map<string, GenerativeModel>();
@@ -42,9 +42,12 @@ function getModel(name: string): GenerativeModel | null {
 
 function isRetryableError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
+  const message = (error as { message?: string }).message ?? "";
+  // Daily quota exhaustion is a 429 but won't recover for many hours, so don't
+  // burn retries on the same model. The fallback chain will move on.
+  if (/quota|free_tier|generate_content_free_tier/i.test(message)) return false;
   const status = (error as { status?: number }).status;
   if (typeof status === "number" && RETRYABLE_STATUSES.has(status)) return true;
-  const message = (error as { message?: string }).message ?? "";
   return /\b(503|502|500|429|overload|unavailable|high demand)\b/i.test(message);
 }
 
@@ -127,30 +130,63 @@ export async function streamShapeCode(
 
   const parts = buildParts(prompt, imageBase64);
 
-  const result = await runWithFallback(async (model) => {
-    const stream = await model.generateContentStream(parts);
-    let receivedAny = false;
-    for await (const chunk of stream.stream) {
-      const text = chunk.text();
-      if (text) {
-        receivedAny = true;
-        // Strip markdown fences in case the model ignores instructions.
-        onChunk(text.replace(/```(?:python|java|cpp)?\n/gi, "").replace(/```/g, ""));
+  // Track whether the current attempt has emitted any bytes. If a model errors
+  // *mid-stream* we cannot safely fall back to another model, otherwise the
+  // client would see two interleaved snippets concatenated together.
+  let lastError: unknown = null;
+  let emittedAny = false;
+
+  for (const modelName of MODEL_FALLBACK_CHAIN) {
+    const model = getModel(modelName);
+    if (!model) continue;
+
+    let succeeded = false;
+    for (let attempt = 0; attempt <= MAX_RETRIES_PER_MODEL; attempt++) {
+      emittedAny = false;
+      try {
+        const stream = await model.generateContentStream(parts);
+        for await (const chunk of stream.stream) {
+          const text = chunk.text();
+          if (text) {
+            emittedAny = true;
+            // Strip markdown fences in case the model ignores instructions.
+            onChunk(text.replace(/```(?:python|java|cpp)?\n/gi, "").replace(/```/g, ""));
+          }
+        }
+        succeeded = true;
+        break;
+      } catch (error) {
+        lastError = error;
+        if (emittedAny) {
+          // Partial output already sent; do not retry or fall back.
+          console.error(`[gemini] ${modelName} errored mid-stream after partial output:`, (error as Error)?.message ?? error);
+          onChunk(commentForLanguage(language, "\nStream interrupted by Gemini. Output above may be incomplete."));
+          return;
+        }
+        if (!isRetryableError(error) || attempt === MAX_RETRIES_PER_MODEL) {
+          break;
+        }
+        const backoff = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+        console.warn(`[gemini] ${modelName} stream attempt ${attempt + 1} failed (${(error as Error)?.message ?? error}), retrying in ${backoff}ms`);
+        await sleep(backoff);
       }
     }
-    return { receivedAny };
-  });
 
-  if (!result.ok) {
-    const error = result.lastError as { status?: number; message?: string } | null;
-    console.error("[gemini] stream failed across all models:", error?.message ?? error);
-    if (error?.status === 503 || /overload|unavailable|high demand/i.test(error?.message ?? "")) {
-      onChunk(commentForLanguage(language, "Gemini is overloaded right now. Please retry in a few seconds."));
-    } else if (error?.status === 429) {
-      onChunk(commentForLanguage(language, "Rate limit reached. Please wait a moment and try again."));
-    } else {
-      onChunk(commentForLanguage(language, `Error generating code from image: ${error?.message ?? "unknown error"}`));
-    }
+    if (succeeded) return;
+    console.warn(`[gemini] falling back from ${modelName} after error:`, (lastError as Error)?.message ?? lastError);
+  }
+
+  const error = lastError as { status?: number; message?: string } | null;
+  console.error("[gemini] stream failed across all models:", error?.message ?? error);
+  const message = error?.message ?? "";
+  if (/quota|free_tier|generate_content_free_tier/i.test(message)) {
+    onChunk(commentForLanguage(language, "Gemini daily quota exceeded across all fallback models. Wait until quota resets or upgrade your API plan."));
+  } else if (error?.status === 503 || /overload|unavailable|high demand/i.test(message)) {
+    onChunk(commentForLanguage(language, "Gemini is overloaded right now. Please retry in a few seconds."));
+  } else if (error?.status === 429) {
+    onChunk(commentForLanguage(language, "Rate limit reached. Please wait a moment and try again."));
+  } else {
+    onChunk(commentForLanguage(language, `Error generating code from image: ${error?.message ?? "unknown error"}`));
   }
 }
 
@@ -174,7 +210,11 @@ Problem context: ${problemContext ?? "None"}`;
   if (!result.ok) {
     const error = result.lastError as { status?: number; message?: string } | null;
     console.error("[gemini] analyze failed across all models:", error?.message ?? error);
-    if (error?.status === 503 || /overload|unavailable|high demand/i.test(error?.message ?? "")) {
+    const message = error?.message ?? "";
+    if (/quota|free_tier|generate_content_free_tier/i.test(message)) {
+      return "Gemini daily quota exceeded across all fallback models. Wait until quota resets or upgrade your API plan.";
+    }
+    if (error?.status === 503 || /overload|unavailable|high demand/i.test(message)) {
       return "Gemini is overloaded right now. Please retry in a few seconds.";
     }
     if (error?.status === 429) {
