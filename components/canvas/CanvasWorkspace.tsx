@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import type { CanvasConnection, CodeLanguage, FlowShape, ShapeType, TraceStep } from "@/types/canvas";
-import { ShapeToolbar } from "@/components/canvas/ShapeToolbar";
+import type { CanvasConnection, CodeLanguage, FlowShape, TraceStep } from "@/types/canvas";
+import { ShapeToolbar, type ImageSource } from "@/components/canvas/ShapeToolbar";
 import { CanvasErrorBoundary } from "@/components/canvas/CanvasErrorBoundary";
+import { UploadedImagePreview } from "@/components/canvas/UploadedImagePreview";
 import { CodePanel } from "@/components/code/CodePanel";
 import { CodeErrorBoundary } from "@/components/code/CodeErrorBoundary";
 
@@ -13,8 +14,36 @@ const FlowCanvas = dynamic(() => import("@/components/canvas/FlowCanvas").then((
   ssr: false
 });
 
+const MAX_DIMENSION = 1280;
+
+async function normalizeUploadedFile(file: File): Promise<{ base64: string; dataUrl: string }> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Failed to decode image"));
+    img.src = dataUrl;
+  });
+  const scale = Math.min(1, MAX_DIMENSION / Math.max(image.width, image.height));
+  const targetWidth = Math.max(1, Math.round(image.width * scale));
+  const targetHeight = Math.max(1, Math.round(image.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas context unavailable");
+  ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+  const normalizedDataUrl = canvas.toDataURL("image/png");
+  const base64 = normalizedDataUrl.split(",")[1] ?? "";
+  return { base64, dataUrl: normalizedDataUrl };
+}
+
 export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
-  const [selectedShape, setSelectedShape] = useState<ShapeType>("process");
   const [language, setLanguage] = useState<CodeLanguage>("python");
   const [problemContext, setProblemContext] = useState("");
   const [shapes, setShapes] = useState<FlowShape[]>([]);
@@ -22,9 +51,11 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
   const [code, setCode] = useState("");
   const [analysis, setAnalysis] = useState<string>();
   const [isStreaming, setIsStreaming] = useState(false);
-  const [traceSteps, setTraceSteps] = useState<TraceStep[]>([]);
-  const [activeTraceShapeId, setActiveTraceShapeId] = useState<string>();
+  const [traceSteps] = useState<TraceStep[]>([]);
+  const [activeTraceShapeId] = useState<string>();
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
+  const [imageSource, setImageSource] = useState<ImageSource>("canvas");
+  const [uploadedImage, setUploadedImage] = useState<{ base64: string; preview: string } | null>(null);
 
   const hasEnd = shapes.some((shape) => shape.type === "end");
   const hasGhost = shapes.some((shape) => shape.type === "decision") && !hasEnd;
@@ -54,16 +85,38 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
     }
   }
 
+  async function getImageBase64(): Promise<string | null> {
+    if (imageSource === "upload") {
+      return uploadedImage?.base64 ?? null;
+    }
+    return getCanvasImageBase64();
+  }
+
+  async function handleUploadFile(file: File) {
+    try {
+      const { base64, dataUrl } = await normalizeUploadedFile(file);
+      setUploadedImage({ base64, preview: dataUrl });
+      setImageSource("upload");
+    } catch (error) {
+      console.error("Failed to process uploaded image", error);
+      setAnalysis("Could not read that image. Please try a different file.");
+    }
+  }
+
   async function analyze() {
-    const imageBase64 = await getCanvasImageBase64();
+    const imageBase64 = await getImageBase64();
     if (!imageBase64) {
-      setAnalysis("Please draw something on the canvas first.");
+      setAnalysis(
+        imageSource === "upload"
+          ? "Please upload an image first."
+          : "Please draw something on the canvas first."
+      );
       return;
     }
 
     setIsStreaming(true);
     setCode("");
-    
+
     // 1. Code Generation
     try {
       const response = await fetch(`${backendUrl}/stream`, {
@@ -107,38 +160,55 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
     }
   }
 
-  async function trace() {
-    // Trace mode can just be mocked or temporarily disabled since shapes aren't exact
-    setTraceSteps([]);
-  }
+  const canAnalyze = imageSource === "upload"
+    ? !!uploadedImage && !isStreaming
+    : shapes.length > 0 && !isStreaming;
 
   return (
     <div className="flex min-h-[calc(100svh-4rem)] flex-col lg:flex-row">
       <ShapeToolbar
-        selectedShape={selectedShape}
         language={language}
         problemContext={problemContext}
-        canAnalyze={shapes.length > 0 && !isStreaming}
-        canTrace={code.length > 0 && !isStreaming}
+        canAnalyze={canAnalyze}
         isBusy={isStreaming}
-        onShapeSelect={setSelectedShape}
+        imageSource={imageSource}
+        uploadedPreview={uploadedImage?.preview}
         onLanguageChange={setLanguage}
         onContextChange={setProblemContext}
         onAnalyze={analyze}
-        onTrace={trace}
+        onImageSourceChange={(source) => {
+          setImageSource(source);
+          if (source === "canvas") {
+            // keep the uploaded image around in case the user toggles back
+          }
+        }}
+        onImageUpload={(base64, preview) => {
+          setUploadedImage({ base64, preview });
+          setImageSource("upload");
+        }}
+        onClearUpload={() => {
+          setUploadedImage(null);
+        }}
       />
-      <CanvasErrorBoundary>
-        <FlowCanvas
-          selectedShape={selectedShape}
-          shapes={shapes}
-          connections={connections}
-          activeTraceShapeId={activeTraceShapeId}
-          onShapesChange={setShapes}
-          onConnectionsChange={setConnections}
-          onShapeComplete={() => {}}
-          onExcalidrawAPI={(api) => setExcalidrawAPI(api)}
+      {imageSource === "upload" ? (
+        <UploadedImagePreview
+          previewUrl={uploadedImage?.preview}
+          onSelectFile={handleUploadFile}
         />
-      </CanvasErrorBoundary>
+      ) : (
+        <CanvasErrorBoundary>
+          <FlowCanvas
+            selectedShape="process"
+            shapes={shapes}
+            connections={connections}
+            activeTraceShapeId={activeTraceShapeId}
+            onShapesChange={setShapes}
+            onConnectionsChange={setConnections}
+            onShapeComplete={() => {}}
+            onExcalidrawAPI={(api) => setExcalidrawAPI(api)}
+          />
+        </CanvasErrorBoundary>
+      )}
       <CodeErrorBoundary>
         <CodePanel
           code={code}

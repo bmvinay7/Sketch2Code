@@ -11,7 +11,7 @@ const app = express();
 const port = Number(process.env.PORT ?? 4001);
 
 app.use(cors({ origin: ["http://localhost:4000", "https://sketchcode.lovable.app"] }));
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "10mb" }));
 
 app.get("/api/health", (_request, response) => {
   response.json({ ok: true, service: "sketch2code-backend" });
