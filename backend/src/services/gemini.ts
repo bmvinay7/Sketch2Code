@@ -1,9 +1,22 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import type { CanvasState, CodeLanguage, FlowShape } from "../types.js";
+import { GoogleGenerativeAI, type GenerativeModel } from "@google/generative-ai";
+import type { CodeLanguage } from "../types.js";
 
-const apiKey = process.env.GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
-const model = genAI?.getGenerativeModel({ model: "gemini-2.5-flash" });
+let genAI: GoogleGenerativeAI | null = null;
+let cachedModel: GenerativeModel | null = null;
+
+function getModel(): GenerativeModel | null {
+  if (cachedModel) return cachedModel;
+
+  // Read the key lazily so dotenv.config() in index.ts has already run by the
+  // time the first request comes in. Reading it at module-import time would
+  // capture an undefined value and permanently disable the client.
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+
+  genAI = new GoogleGenerativeAI(apiKey);
+  cachedModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  return cachedModel;
+}
 
 export function buildStreamPrompt(language: CodeLanguage, problemContext?: string) {
   return `You are a strictly literal code translator. Your ONLY job is to convert the EXACT steps shown in the flowchart image into ${language} code.
@@ -16,11 +29,12 @@ Problem context: ${problemContext ?? "Not provided"}`;
 }
 
 export async function streamShapeCode(prompt: string, imageBase64: string | undefined, language: CodeLanguage, onChunk: (text: string) => void) {
+  const model = getModel();
   if (!model) {
     onChunk(`// No Gemini key found.\n// Expected ${language} code from image.\n`);
     return;
   }
-  
+
   const parts: any[] = [{ text: prompt }];
   if (imageBase64) {
     parts.push({
@@ -45,6 +59,7 @@ export async function streamShapeCode(prompt: string, imageBase64: string | unde
 }
 
 export async function analyzeAlgorithm(imageBase64: string | undefined, problemContext?: string): Promise<string> {
+  const model = getModel();
   if (!model) return "No Gemini key configured.";
 
   const prompt = `You are a DSA teaching assistant.
