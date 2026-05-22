@@ -2,14 +2,15 @@ import { GoogleGenerativeAI, type GenerativeModel } from "@google/generative-ai"
 import type { CodeLanguage } from "../types.js";
 
 // Tried in order. If a request to the first one returns a transient overload
-// status (503 / 429 / 500), we fall through to the next one. Older / smaller
-// models are used as fallbacks because they tend to have more available
-// capacity when the latest model is at peak demand.
+// status (503 / 429 / 500), we fall through to the next one. Newer Gemini API
+// versions deprecated 1.5; the chain below uses 2.x families that are
+// confirmed available via models.list and orders them so a daily-quota
+// failure on the primary model rolls down to a less-loaded sibling.
 const MODEL_FALLBACK_CHAIN = [
   "gemini-2.5-flash",
-  "gemini-1.5-flash",
-  "gemini-1.5-flash-8b",
-  "gemini-1.5-pro"
+  "gemini-2.5-flash-lite",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite"
 ];
 
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
@@ -40,8 +41,19 @@ function getModel(name: string): GenerativeModel | null {
   return model;
 }
 
+function isModelMissingError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const status = (error as { status?: number }).status;
+  if (status === 404) return true;
+  const message = (error as { message?: string }).message ?? "";
+  return /not found for API version|is not supported for generateContent/i.test(message);
+}
+
 function isRetryableError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
+  // 404s mean this model isn't available for the current API key. Don't retry,
+  // don't surface as an error - just skip to the next model in the chain.
+  if (isModelMissingError(error)) return false;
   const message = (error as { message?: string }).message ?? "";
   // Daily quota exhaustion is a 429 but won't recover for many hours, so don't
   // burn retries on the same model. The fallback chain will move on.
@@ -179,7 +191,9 @@ export async function streamShapeCode(
   const error = lastError as { status?: number; message?: string } | null;
   console.error("[gemini] stream failed across all models:", error?.message ?? error);
   const message = error?.message ?? "";
-  if (/quota|free_tier|generate_content_free_tier/i.test(message)) {
+  if (isModelMissingError(error)) {
+    onChunk(commentForLanguage(language, "No supported Gemini model is available for this API key. Update MODEL_FALLBACK_CHAIN in backend/src/services/gemini.ts."));
+  } else if (/quota|free_tier|generate_content_free_tier/i.test(message)) {
     onChunk(commentForLanguage(language, "Gemini daily quota exceeded across all fallback models. Wait until quota resets or upgrade your API plan."));
   } else if (error?.status === 503 || /overload|unavailable|high demand/i.test(message)) {
     onChunk(commentForLanguage(language, "Gemini is overloaded right now. Please retry in a few seconds."));
@@ -211,6 +225,9 @@ Problem context: ${problemContext ?? "None"}`;
     const error = result.lastError as { status?: number; message?: string } | null;
     console.error("[gemini] analyze failed across all models:", error?.message ?? error);
     const message = error?.message ?? "";
+    if (isModelMissingError(error)) {
+      return "No supported Gemini model is available for this API key.";
+    }
     if (/quota|free_tier|generate_content_free_tier/i.test(message)) {
       return "Gemini daily quota exceeded across all fallback models. Wait until quota resets or upgrade your API plan.";
     }
