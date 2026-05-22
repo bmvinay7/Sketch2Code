@@ -8,9 +8,9 @@ import { traceRouter } from "./routes/trace.js";
 dotenv.config();
 
 const app = express();
-const port = Number(process.env.PORT ?? 3001);
+const port = Number(process.env.PORT ?? 4001);
 
-app.use(cors({ origin: ["http://localhost:3000", "https://sketchcode.lovable.app"] }));
+app.use(cors({ origin: ["http://localhost:4000", "https://sketchcode.lovable.app"] }));
 app.use(express.json({ limit: "1mb" }));
 
 app.get("/api/health", (_request, response) => {

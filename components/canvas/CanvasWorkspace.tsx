@@ -8,7 +8,7 @@ import { CanvasErrorBoundary } from "@/components/canvas/CanvasErrorBoundary";
 import { CodePanel } from "@/components/code/CodePanel";
 import { CodeErrorBoundary } from "@/components/code/CodeErrorBoundary";
 
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:4001";
 const FlowCanvas = dynamic(() => import("@/components/canvas/FlowCanvas").then((mod) => mod.FlowCanvas), {
   ssr: false
 });
