@@ -7,10 +7,18 @@ echo "==> 📦 Building the production app (this might take a minute)..."
 
 echo "==> 1/2 Building backend..."
 cd "$ROOT_DIR/backend"
+if [ ! -d "node_modules" ]; then
+  echo "    Installing backend dependencies..."
+  npm install
+fi
 npm run build
 
 echo "==> 2/2 Building frontend..."
 cd "$ROOT_DIR"
+if [ ! -d "node_modules" ]; then
+  echo "    Installing frontend dependencies..."
+  npm install
+fi
 npm run build
 
 echo "==> ✅ Build complete! Starting the demo..."

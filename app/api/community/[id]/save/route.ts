@@ -1,19 +1,22 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { resolveWriter } from "@/lib/currentUser";
 
 export async function POST(_request: Request, { params }: { params: { id: string } }) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = await prisma.user.findUnique({ where: { clerkId: userId } });
-  if (!user) return NextResponse.json({ error: "User not synced" }, { status: 409 });
-  const existing = await prisma.save.findUnique({
-    where: { userId_postId: { userId: user.id, postId: params.id } }
-  });
-  if (existing) {
-    await prisma.save.delete({ where: { id: existing.id } });
-    return NextResponse.json({ saved: false });
+  const writer = await resolveWriter();
+  if (!writer.ok) return NextResponse.json({ error: writer.error }, { status: writer.status });
+  try {
+    const existing = await prisma.save.findUnique({
+      where: { userId_postId: { userId: writer.user.id, postId: params.id } }
+    });
+    if (existing) {
+      await prisma.save.delete({ where: { id: existing.id } });
+      return NextResponse.json({ saved: false });
+    }
+    await prisma.save.create({ data: { userId: writer.user.id, postId: params.id } });
+    return NextResponse.json({ saved: true });
+  } catch (error) {
+    console.error("[community.save]", error);
+    return NextResponse.json({ error: "Could not toggle save." }, { status: 500 });
   }
-  await prisma.save.create({ data: { userId: user.id, postId: params.id } });
-  return NextResponse.json({ saved: true });
 }

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { buildStreamPrompt, streamShapeCode } from "../services/gemini.js";
-import { checkRateLimit, getSession, setSession } from "../services/redis.js";
-import type { CanvasConnection, CanvasState, CodeLanguage, FlowShape } from "../types.js";
+import { checkRateLimit } from "../services/redis.js";
+import type { CodeLanguage } from "../types.js";
 
 interface StreamBody {
   sessionId: string;

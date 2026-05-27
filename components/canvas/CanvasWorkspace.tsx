@@ -6,42 +6,17 @@ import type { CanvasConnection, CodeLanguage, FlowShape, TraceStep } from "@/typ
 import { ShapeToolbar, type ImageSource } from "@/components/canvas/ShapeToolbar";
 import { CanvasErrorBoundary } from "@/components/canvas/CanvasErrorBoundary";
 import { UploadedImagePreview } from "@/components/canvas/UploadedImagePreview";
+import { PublishDialog } from "@/components/canvas/PublishDialog";
 import { CodePanel } from "@/components/code/CodePanel";
 import { CodeErrorBoundary } from "@/components/code/CodeErrorBoundary";
+import { prepareImageFromBlob, prepareImageFromFile, type PreparedImage } from "@/lib/image";
 
 const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:4001";
 const FlowCanvas = dynamic(() => import("@/components/canvas/FlowCanvas").then((mod) => mod.FlowCanvas), {
   ssr: false
 });
 
-const MAX_DIMENSION = 1280;
-
-async function normalizeUploadedFile(file: File): Promise<{ base64: string; dataUrl: string }> {
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error("Failed to read file"));
-    reader.readAsDataURL(file);
-  });
-  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Failed to decode image"));
-    img.src = dataUrl;
-  });
-  const scale = Math.min(1, MAX_DIMENSION / Math.max(image.width, image.height));
-  const targetWidth = Math.max(1, Math.round(image.width * scale));
-  const targetHeight = Math.max(1, Math.round(image.height * scale));
-  const canvas = document.createElement("canvas");
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas context unavailable");
-  ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
-  const normalizedDataUrl = canvas.toDataURL("image/png");
-  const base64 = normalizedDataUrl.split(",")[1] ?? "";
-  return { base64, dataUrl: normalizedDataUrl };
-}
+interface UploadedImageState extends PreparedImage {}
 
 export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
   const [language, setLanguage] = useState<CodeLanguage>("python");
@@ -55,12 +30,14 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
   const [activeTraceShapeId] = useState<string>();
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
   const [imageSource, setImageSource] = useState<ImageSource>("canvas");
-  const [uploadedImage, setUploadedImage] = useState<{ base64: string; preview: string } | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<UploadedImageState | null>(null);
+  const [lastThreshold, setLastThreshold] = useState<number | null>(null);
+  const [showPublish, setShowPublish] = useState(false);
 
   const hasEnd = shapes.some((shape) => shape.type === "end");
   const hasGhost = shapes.some((shape) => shape.type === "decision") && !hasEnd;
 
-  async function getCanvasImageBase64() {
+  async function getCanvasImageBase64(): Promise<{ base64: string; threshold: number } | null> {
     if (!excalidrawAPI) return null;
     const elements = excalidrawAPI.getSceneElements();
     if (!elements || elements.length === 0) return null;
@@ -72,30 +49,27 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
         files: excalidrawAPI.getFiles(),
         mimeType: "image/png",
       });
-      return new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          resolve((reader.result as string).split(",")[1]);
-        };
-        reader.readAsDataURL(blob);
-      });
+      const prepared = await prepareImageFromBlob(blob);
+      return { base64: prepared.base64, threshold: prepared.threshold };
     } catch (err) {
       console.error("Failed to export image", err);
       return null;
     }
   }
 
-  async function getImageBase64(): Promise<string | null> {
+  async function getImageBase64(): Promise<{ base64: string; threshold: number } | null> {
     if (imageSource === "upload") {
-      return uploadedImage?.base64 ?? null;
+      if (!uploadedImage) return null;
+      return { base64: uploadedImage.base64, threshold: uploadedImage.threshold };
     }
     return getCanvasImageBase64();
   }
 
   async function handleUploadFile(file: File) {
     try {
-      const { base64, dataUrl } = await normalizeUploadedFile(file);
-      setUploadedImage({ base64, preview: dataUrl });
+      const prepared = await prepareImageFromFile(file);
+      setUploadedImage(prepared);
+      setLastThreshold(prepared.threshold);
       setImageSource("upload");
     } catch (error) {
       console.error("Failed to process uploaded image", error);
@@ -104,8 +78,8 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
   }
 
   async function analyze() {
-    const imageBase64 = await getImageBase64();
-    if (!imageBase64) {
+    const prepared = await getImageBase64();
+    if (!prepared) {
       setAnalysis(
         imageSource === "upload"
           ? "Please upload an image first."
@@ -114,6 +88,7 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
       return;
     }
 
+    setLastThreshold(prepared.threshold);
     setIsStreaming(true);
     setCode("");
 
@@ -122,7 +97,7 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
       const response = await fetch(`${backendUrl}/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, language, problemContext, imageBase64 })
+        body: JSON.stringify({ sessionId, language, problemContext, imageBase64: prepared.base64 })
       });
       if (response.ok && response.body) {
         const reader = response.body.getReader();
@@ -151,7 +126,7 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
       const response = await fetch(`${backendUrl}/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, flowchartId: undefined, language, problemContext, imageBase64 })
+        body: JSON.stringify({ sessionId, language, problemContext, imageBase64: prepared.base64 })
       });
       const payload = (await response.json()) as { analysis?: string };
       setAnalysis(payload.analysis ?? "No analysis returned.");
@@ -163,36 +138,34 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
   const canAnalyze = imageSource === "upload"
     ? !!uploadedImage && !isStreaming
     : shapes.length > 0 && !isStreaming;
+  const canPublish = code.length > 0 && !isStreaming;
 
   return (
-    <div className="flex min-h-[calc(100svh-4rem)] flex-col lg:flex-row">
+    <div className="flex min-h-[calc(100vh-57px)] flex-col lg:flex-row">
       <ShapeToolbar
         language={language}
         problemContext={problemContext}
         canAnalyze={canAnalyze}
+        canPublish={canPublish}
         isBusy={isStreaming}
         imageSource={imageSource}
-        uploadedPreview={uploadedImage?.preview}
+        uploadedPreview={uploadedImage?.previewDataUrl}
+        otsuThreshold={lastThreshold}
         onLanguageChange={setLanguage}
         onContextChange={setProblemContext}
         onAnalyze={analyze}
-        onImageSourceChange={(source) => {
-          setImageSource(source);
-          if (source === "canvas") {
-            // keep the uploaded image around in case the user toggles back
-          }
-        }}
-        onImageUpload={(base64, preview) => {
-          setUploadedImage({ base64, preview });
-          setImageSource("upload");
-        }}
+        onPublish={() => setShowPublish(true)}
+        onImageSourceChange={(source) => setImageSource(source)}
+        onImageUpload={async (file) => handleUploadFile(file)}
         onClearUpload={() => {
           setUploadedImage(null);
+          setLastThreshold(null);
         }}
       />
       {imageSource === "upload" ? (
         <UploadedImagePreview
-          previewUrl={uploadedImage?.preview}
+          previewUrl={uploadedImage?.previewDataUrl}
+          threshold={uploadedImage?.threshold ?? null}
           onSelectFile={handleUploadFile}
         />
       ) : (
@@ -219,6 +192,15 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
           onCopy={() => navigator.clipboard.writeText(code)}
         />
       </CodeErrorBoundary>
+      {showPublish && (
+        <PublishDialog
+          defaultTitle={problemContext.slice(0, 80) || "Untitled flowchart"}
+          language={language}
+          problemContext={problemContext}
+          generatedCode={code}
+          onClose={() => setShowPublish(false)}
+        />
+      )}
       <span className="sr-only">{traceSteps.length} trace steps loaded</span>
     </div>
   );

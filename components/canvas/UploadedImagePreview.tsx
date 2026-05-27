@@ -1,16 +1,17 @@
 "use client";
 
-import { ImageIcon, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import { useRef } from "react";
 
 const ACCEPTED_TYPES = "image/png,image/jpeg,image/webp";
 
 interface UploadedImagePreviewProps {
   previewUrl?: string;
+  threshold: number | null;
   onSelectFile: (file: File) => void;
 }
 
-export function UploadedImagePreview({ previewUrl, onSelectFile }: UploadedImagePreviewProps) {
+export function UploadedImagePreview({ previewUrl, threshold, onSelectFile }: UploadedImagePreviewProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   function handleDrop(event: React.DragEvent<HTMLDivElement>) {
@@ -21,8 +22,8 @@ export function UploadedImagePreview({ previewUrl, onSelectFile }: UploadedImage
 
   return (
     <div
-      className="flex-1 relative min-w-0 mt-16 flex items-center justify-center bg-[#08080d] p-8"
-      style={{ height: "calc(100vh - 4rem)" }}
+      className="relative flex min-w-0 flex-1 items-center justify-center bg-ink-0 p-10"
+      style={{ height: "calc(100vh - 57px)" }}
       onDragOver={(event) => event.preventDefault()}
       onDrop={handleDrop}
     >
@@ -38,33 +39,49 @@ export function UploadedImagePreview({ previewUrl, onSelectFile }: UploadedImage
         }}
       />
       {previewUrl ? (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={previewUrl}
-            alt="Uploaded sketch preview"
-            className="max-h-full max-w-full rounded-xl border border-white/10 bg-black/40 object-contain shadow-lg"
-          />
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="rounded-md border border-white/10 bg-black/40 px-4 py-2 text-xs font-medium text-text-secondary transition hover:bg-white/5 hover:text-text-primary"
-          >
-            Replace image
-          </button>
+        <div className="flex h-full w-full flex-col items-center justify-center gap-5">
+          <div className="crosshair relative max-h-full max-w-full">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={previewUrl}
+              alt="Uploaded sketch preview"
+              className="max-h-[calc(100vh-220px)] max-w-full border border-rule bg-ink-50 object-contain p-2"
+            />
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="border border-rule-strong bg-transparent px-4 py-2 font-mono text-[11px] uppercase tracking-cap text-paper-50 transition-colors hover:bg-paper-50 hover:text-ink-0"
+            >
+              replace image
+            </button>
+            {threshold !== null && (
+              <p className="font-mono text-[10px] uppercase tracking-cap text-paper-300">
+                <span>otsu binarisation · </span>
+                <span className="tabular text-amber">t = {threshold}</span>
+              </p>
+            )}
+          </div>
         </div>
       ) : (
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="flex h-full max-h-[640px] w-full max-w-3xl flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-white/10 bg-black/30 text-text-secondary transition hover:border-accent/60 hover:bg-white/5 hover:text-text-primary"
+          className="group crosshair flex h-full max-h-[640px] w-full max-w-3xl flex-col items-center justify-center gap-5 border border-dashed border-rule-strong bg-ink-50/40 transition-colors hover:border-lime"
         >
-          <div className="flex items-center gap-3">
-            <ImageIcon className="h-8 w-8" />
-            <Upload className="h-8 w-8" />
+          <div className="flex h-16 w-16 items-center justify-center border border-rule-strong">
+            <Upload className="h-6 w-6 text-paper-200 transition-colors group-hover:text-lime" />
           </div>
-          <p className="text-base font-semibold">Drop a sketch here</p>
-          <p className="text-xs text-text-muted">or click to browse PNG, JPG or WebP files</p>
+          <div className="text-center">
+            <p className="mono-headline text-[28px] text-paper-50">drop a sketch.</p>
+            <p className="mt-3 font-mono text-[11px] uppercase tracking-cap text-paper-300">
+              png · jpg · webp · max 1280px
+            </p>
+          </div>
+          <p className="mt-2 max-w-sm text-center text-[13px] leading-relaxed text-paper-100">
+            We&apos;ll preprocess with Otsu&apos;s method, then ask Gemini to translate exactly what we see.
+          </p>
         </button>
       )}
     </div>

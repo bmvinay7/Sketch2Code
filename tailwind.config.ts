@@ -5,42 +5,64 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        'bg-base':    'var(--color-bg-base)',
-        'bg-card':    'var(--color-bg-card)',
-        'bg-card-hover': 'var(--color-bg-card-hover)',
-        'accent':     'var(--color-accent)',
-        'accent-dim': 'var(--color-accent-dim)',
-        'text-primary': 'var(--color-text-primary)',
-        'text-secondary': 'var(--color-text-secondary)',
-        'text-muted': 'var(--color-text-muted)',
-        'card-border': 'var(--color-border-card)',
-        'border-nav': 'var(--color-border-nav)',
-        background: "var(--background)",
-        surface: "var(--surface)",
-        "surface-raised": "var(--surface-raised)",
-        border: "var(--border)",
-        primary: "var(--primary)",
-        success: "var(--success)",
-        warning: "var(--warning)",
-        error: "var(--error)"
+        ink: {
+          0: "var(--ink-0)",      // deepest — base canvas
+          50: "var(--ink-50)",    // surface
+          100: "var(--ink-100)",  // surface raised
+          200: "var(--ink-200)",  // hover
+          300: "var(--ink-300)"   // active
+        },
+        rule: "var(--rule)",         // hairline divider
+        "rule-strong": "var(--rule-strong)",
+        paper: {
+          50: "var(--paper-50)",     // primary text
+          100: "var(--paper-100)",   // secondary text
+          200: "var(--paper-200)",   // muted text
+          300: "var(--paper-300)"    // hint text
+        },
+        graphite: "var(--graphite)", // disabled / scaffolding
+        lime: "var(--lime)",         // the one accent
+        "lime-dim": "var(--lime-dim)",
+        amber: "var(--amber)",       // annotation pencil
+        crimson: "var(--crimson)",   // destructive
+        moss: "var(--moss)",         // success
+        // legacy aliases (kept so existing classes don't break)
+        background: "var(--ink-0)",
+        surface: "var(--ink-50)",
+        "surface-raised": "var(--ink-100)",
+        border: "var(--rule)",
+        primary: "var(--lime)",
+        accent: "var(--lime)",
+        "text-primary": "var(--paper-50)",
+        "text-secondary": "var(--paper-100)",
+        "text-muted": "var(--paper-200)",
+        "border-nav": "var(--rule)",
+        success: "var(--moss)",
+        warning: "var(--amber)",
+        error: "var(--crimson)"
       },
       fontFamily: {
-        display: ['Playfair Display', 'Georgia', 'serif'],
-        body: ['Inter', 'system-ui', 'sans-serif'],
-        sans: ["var(--font-inter)", "Inter", "sans-serif"],
-        mono: ["var(--font-jetbrains)", "JetBrains Mono", "monospace"]
+        display: ["var(--font-mono)", "JetBrains Mono", "ui-monospace", "monospace"],
+        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+        serif: ["var(--font-serif)", "Georgia", "serif"],
+        mono: ["var(--font-mono)", "JetBrains Mono", "ui-monospace", "monospace"],
+        body: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"]
+      },
+      letterSpacing: {
+        tightest: "-0.045em",
+        cap: "0.18em"
       },
       borderRadius: {
-        'card': '16px',
-        'btn': '999px',
-      },
-      backdropBlur: {
-        'card': '8px',
-        'nav': '12px',
+        none: "0",
+        sm: "2px",
+        md: "4px",
+        lg: "6px",
+        card: "0"
       },
       boxShadow: {
-        glow: "0 0 36px rgba(125, 189, 176, 0.16)",
-        indigo: "0 0 40px rgba(125, 189, 176, 0.18)"
+        hairline: "0 0 0 1px var(--rule)",
+        "hairline-strong": "0 0 0 1px var(--rule-strong)",
+        lime: "0 0 0 1px var(--lime)"
       }
     }
   },

@@ -1,28 +1,63 @@
 import { currentUser } from "@clerk/nextjs/server";
-import { Skeleton } from "@/components/ui/Skeleton";
+
+async function safeCurrentUser() {
+  if (process.env.DISABLE_AUTH === "true") {
+    return { fullName: "Local Dev", imageUrl: undefined as string | undefined };
+  }
+  try {
+    return await currentUser();
+  } catch {
+    return null;
+  }
+}
 
 export default async function ProfilePage() {
-  const user = await currentUser();
+  const user = await safeCurrentUser();
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <div className="flex items-center gap-4 border-b border-border pb-8">
-        {user?.imageUrl ? (
-          <img src={user.imageUrl} alt="" className="h-16 w-16 rounded-full border border-border" />
-        ) : (
-          <Skeleton className="h-16 w-16 rounded-full" />
-        )}
-        <div>
-          <h1 className="text-3xl font-black text-text-primary">{user?.fullName ?? "Your profile"}</h1>
-          <p className="mt-1 text-sm text-text-secondary">Joined Sketch2Code through Clerk authentication.</p>
+    <section className="mx-auto max-w-[1480px] px-6 pb-24 pt-12 lg:px-10">
+      <header className="border-b border-rule pb-10">
+        <p className="eyebrow flex items-center gap-3">
+          <span className="h-px w-8 bg-rule-strong" aria-hidden />
+          profile
+        </p>
+        <div className="mt-8 flex items-end gap-6">
+          {user?.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={user.imageUrl}
+              alt=""
+              className="h-20 w-20 border border-rule-strong object-cover"
+            />
+          ) : (
+            <div className="h-20 w-20 border border-rule-strong bg-ink-50" />
+          )}
+          <div>
+            <h1 className="mono-headline text-[64px] text-paper-50">
+              {(user?.fullName ?? "your profile").toLowerCase()}.
+            </h1>
+            <p className="mt-3 font-mono text-[11px] uppercase tracking-cap text-paper-300">
+              member · since signup
+            </p>
+          </div>
         </div>
-      </div>
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        {["My Flowcharts", "Saved"].map((tab) => (
-          <section key={tab} className="rounded-lg border border-border bg-surface p-5">
-            <h2 className="font-bold text-text-primary">{tab}</h2>
-            <div className="mt-5 rounded-lg border border-dashed border-border p-8 text-center text-sm text-text-secondary">
-              No entries yet.
+      </header>
+
+      <div className="mt-10 grid gap-px bg-rule lg:grid-cols-2">
+        {[
+          { label: "my flowcharts", index: "01" },
+          { label: "saved", index: "02" }
+        ].map((tab) => (
+          <section key={tab.label} className="bg-ink-0 p-6">
+            <header className="flex items-baseline justify-between border-b border-rule pb-3">
+              <p className="eyebrow">{tab.label}</p>
+              <span className="index-tag">{tab.index} / 02</span>
+            </header>
+            <div className="mt-6 border border-dashed border-rule bg-ink-50/40 px-6 py-10 text-center">
+              <p className="font-mono text-[12px] uppercase tracking-cap text-paper-200">no entries</p>
+              <p className="mt-3 text-[13px] leading-relaxed text-paper-300">
+                Once you publish a flowchart it&apos;ll show up here.
+              </p>
             </div>
           </section>
         ))}

@@ -1,36 +1,41 @@
 const lines = [
-  "def solve(nums):",
-  "    best = nums[0]",
-  "    for value in nums:",
-  "        if value > best:",
-  "            best = value",
-  "    return best"
+  { ln: 1, text: "def max_element(nums):" },
+  { ln: 2, text: "    best = nums[0]" },
+  { ln: 3, text: "    for value in nums:" },
+  { ln: 4, text: "        if value > best:" },
+  { ln: 5, text: "            best = value" },
+  { ln: 6, text: "    return best" }
 ];
 
 export function MockCodeStream() {
   return (
-    <div className="relative rounded-xl border border-border bg-[#07070c] p-5 shadow-2xl shadow-cyan-500/10">
-      <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
-        <span className="text-xs font-semibold uppercase tracking-[0.22em] text-text-muted">stream.py</span>
-        <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">live</span>
+    <div className="relative">
+      <div className="flex items-center justify-between border border-rule bg-ink-50 px-4 py-2.5">
+        <div className="flex items-center gap-3 font-mono text-[11px] uppercase tracking-cap text-paper-200">
+          <span className="text-paper-300">file</span>
+          <span className="text-paper-50">max_element.py</span>
+        </div>
+        <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-cap text-lime">
+          <span className="h-1.5 w-1.5 bg-lime cursor-blink" />
+          streaming
+        </div>
       </div>
-      <pre className="min-h-72 overflow-hidden font-mono text-sm leading-7 text-text-secondary">
-        {lines.map((line, lineIndex) => (
-          <span key={line} className="block">
-            {line.split("").map((char, charIndex) => (
-              <span
-                key={`${lineIndex}-${charIndex}`}
-                className="animate-[fade_600ms_ease_forwards] opacity-0"
-                style={{ animationDelay: `${lineIndex * 220 + charIndex * 18}ms` }}
-              >
-                {char}
-              </span>
-            ))}
-          </span>
+      <div className="crosshair relative border-x border-b border-rule bg-ink-50 px-4 py-5 font-mono text-[13px] leading-[1.85]">
+        {lines.map((line, i) => (
+          <div key={line.ln} className="fade-up flex gap-5" style={{ animationDelay: `${150 + i * 110}ms` }}>
+            <span className="tabular w-4 select-none text-right text-paper-300">{line.ln}</span>
+            <span className="text-paper-50">{line.text}</span>
+          </div>
         ))}
-        <span className="cursor-blink ml-1 inline-block h-4 w-2 bg-accent align-middle" />
-      </pre>
-      <div className="absolute -inset-px -z-10 rounded-xl bg-gradient-to-br from-primary/30 to-accent/20 blur-2xl" />
+        <div className="flex gap-5">
+          <span className="tabular w-4 select-none text-right text-paper-300">{lines.length + 1}</span>
+          <span className="cursor-blink inline-block h-[1.1em] w-[0.55em] bg-lime align-middle" />
+        </div>
+      </div>
+      <div className="mt-2 flex items-center justify-between font-mono text-[10px] uppercase tracking-cap text-paper-300">
+        <span>gemini · 2.5 flash</span>
+        <span className="tabular">6 lines · 0.42s</span>
+      </div>
     </div>
   );
 }

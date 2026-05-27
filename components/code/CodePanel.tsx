@@ -1,17 +1,8 @@
 "use client";
 
-import { Copy, FileCode2 } from "lucide-react";
+import { Copy } from "lucide-react";
 import type { CodeLanguage } from "@/types/canvas";
 import { AnalysisPanel } from "@/components/analysis/AnalysisPanel";
-
-const keywords = ["def", "if", "else", "for", "while", "return", "class", "public", "static", "void", "int"];
-
-function colorize(token: string) {
-  if (keywords.includes(token.trim())) return "text-accent";
-  if (/^[0-9]+$/.test(token.trim())) return "text-warning";
-  if (token.includes('"') || token.includes("'")) return "text-success";
-  return "text-text-secondary";
-}
 
 interface CodePanelProps {
   code: string;
@@ -22,32 +13,87 @@ interface CodePanelProps {
   onCopy: () => void;
 }
 
+const EXT: Record<CodeLanguage, string> = {
+  python: "py",
+  java: "java",
+  cpp: "cpp"
+};
+
 export function CodePanel({ code, language, isStreaming, hasGhost, analysis, onCopy }: CodePanelProps) {
-  const chars = code.length > 0 ? code.split("") : ["#", " ", "C", "o", "d", "e", " ", "s", "t", "r", "e", "a", "m", " ", "w", "i", "l", "l", " ", "a", "p", "p", "e", "a", "r", " ", "h", "e", "r", "e"];
+  const hasCode = code.length > 0;
+  const lines = hasCode ? code.split("\n") : [];
 
   return (
-    <aside className="flex h-[calc(100svh-4rem)] mt-16 w-full flex-col border-l border-white/10 bg-[#08111f]/60 backdrop-blur-md lg:w-[420px]">
-      <div className="flex items-center justify-between border-b border-white/10 p-5">
-        <div className="flex items-center gap-3">
-          <FileCode2 className="h-5 w-5 text-accent" />
-          <span className="rounded-full bg-accent/15 px-3 py-1 text-xs font-bold uppercase tracking-widest text-accent">{language}</span>
+    <aside className="flex w-full flex-col border-l border-rule bg-ink-0 lg:h-[calc(100vh-57px)] lg:w-[420px]">
+      {/* Header bar */}
+      <header className="flex items-center justify-between border-b border-rule px-4 py-3">
+        <div className="flex items-center gap-3 font-mono text-[11px] uppercase tracking-cap text-paper-200">
+          <span className="text-paper-300">file</span>
+          <span className="text-paper-50">output.{EXT[language]}</span>
         </div>
-        <button onClick={onCopy} className="rounded-md p-2 text-text-secondary transition hover:bg-white/5 hover:text-text-primary">
-          <Copy className="h-4 w-4" />
-        </button>
-      </div>
-      <div className="min-h-0 flex-1 overflow-auto p-6">
-        <pre className="min-h-[280px] whitespace-pre-wrap bg-black/40 border border-white/10 rounded-xl p-6 font-mono text-[0.85rem] leading-[1.65] text-white/85">
-          {chars.map((char, index) => (
-            <span key={`${char}-${index}`} className={colorize(char)} style={{ animationDelay: `${index * 8}ms` }}>
-              {char}
+        <div className="flex items-center gap-3">
+          {isStreaming && (
+            <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-cap text-lime">
+              <span className="h-1.5 w-1.5 bg-lime cursor-blink" />
+              streaming
             </span>
-          ))}
-          {isStreaming && <span className="cursor-blink ml-1 inline-block h-4 w-2 bg-accent align-middle" />}
+          )}
+          <button
+            onClick={onCopy}
+            className="border border-transparent p-1.5 text-paper-200 transition-colors hover:border-rule-strong hover:text-paper-50"
+            aria-label="Copy code"
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </header>
+
+      {/* Code body */}
+      <div className="min-h-0 flex-1 overflow-auto">
+        <pre className="font-mono text-[12.5px] leading-[1.8]">
+          {hasCode ? (
+            lines.map((line, i) => (
+              <div key={i} className="flex gap-4 px-4">
+                <span className="tabular w-8 shrink-0 select-none text-right text-paper-300">
+                  {i + 1}
+                </span>
+                <span className="whitespace-pre text-paper-50">{line || " "}</span>
+              </div>
+            ))
+          ) : (
+            <div className="flex gap-4 px-4 py-4">
+              <span className="tabular w-8 shrink-0 select-none text-right text-paper-300">1</span>
+              <span className="text-paper-300">{`# the code stream will appear here.`}</span>
+            </div>
+          )}
+          {isStreaming && (
+            <div className="flex gap-4 px-4">
+              <span className="tabular w-8 shrink-0 select-none text-right text-paper-300">
+                {Math.max(1, lines.length + 1)}
+              </span>
+              <span className="cursor-blink inline-block h-[1.1em] w-[0.55em] bg-lime" />
+            </div>
+          )}
         </pre>
-        {hasGhost && <p className="mt-3 text-xs text-warning">Pending branch code is ghosted until an End node closes the flow.</p>}
-        <AnalysisPanel markdown={analysis} />
+
+        {hasGhost && (
+          <p className="mx-4 mt-3 border-l-2 border-amber bg-amber/5 px-3 py-2 font-mono text-[11px] text-amber">
+            pending branch · ghosted until an end node closes the flow
+          </p>
+        )}
+
+        <div className="px-4 pb-6">
+          <AnalysisPanel markdown={analysis} />
+        </div>
       </div>
+
+      {/* Footer */}
+      <footer className="flex items-center justify-between border-t border-rule px-4 py-2.5 font-mono text-[10px] uppercase tracking-cap text-paper-300">
+        <span>gemini · 2.5 flash</span>
+        <span className="tabular">
+          {hasCode ? `${lines.length} lines` : "ready"}
+        </span>
+      </footer>
     </aside>
   );
 }

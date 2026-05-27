@@ -1,18 +1,16 @@
 "use client";
 
 import { useRef } from "react";
-import { GitBranch, ImageIcon, Pencil, Terminal, Upload, X } from "lucide-react";
+import { ImageIcon, Pencil, Share2, Terminal, Upload, X } from "lucide-react";
 import type { CodeLanguage } from "@/types/canvas";
-import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
-const languages: Array<{ label: string; value: CodeLanguage }> = [
-  { label: "Python", value: "python" },
-  { label: "Java", value: "java" },
-  { label: "C++", value: "cpp" }
+const languages: Array<{ label: string; value: CodeLanguage; ext: string }> = [
+  { label: "python", value: "python", ext: ".py" },
+  { label: "java", value: "java", ext: ".java" },
+  { label: "c++", value: "cpp", ext: ".cpp" }
 ];
 
-const MAX_DIMENSION = 1280;
 const ACCEPTED_TYPES = "image/png,image/jpeg,image/webp";
 
 export type ImageSource = "canvas" | "upload";
@@ -21,191 +19,207 @@ interface ShapeToolbarProps {
   language: CodeLanguage;
   problemContext: string;
   canAnalyze: boolean;
+  canPublish: boolean;
   isBusy: boolean;
   imageSource: ImageSource;
   uploadedPreview?: string;
+  otsuThreshold: number | null;
   onLanguageChange: (language: CodeLanguage) => void;
   onContextChange: (value: string) => void;
   onAnalyze: () => void;
+  onPublish: () => void;
   onImageSourceChange: (source: ImageSource) => void;
-  onImageUpload: (base64: string, previewDataUrl: string) => void;
+  onImageUpload: (file: File) => void | Promise<void>;
   onClearUpload: () => void;
-}
-
-async function fileToBase64Png(file: File): Promise<{ base64: string; dataUrl: string }> {
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error("Failed to read file"));
-    reader.readAsDataURL(file);
-  });
-
-  // Downscale via an offscreen canvas so the backend payload stays small
-  // and we always send PNG (matching the mime type the backend forwards to Gemini).
-  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Failed to decode image"));
-    img.src = dataUrl;
-  });
-
-  const scale = Math.min(1, MAX_DIMENSION / Math.max(image.width, image.height));
-  const targetWidth = Math.max(1, Math.round(image.width * scale));
-  const targetHeight = Math.max(1, Math.round(image.height * scale));
-
-  const canvas = document.createElement("canvas");
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas context unavailable");
-  ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
-  const normalizedDataUrl = canvas.toDataURL("image/png");
-  const base64 = normalizedDataUrl.split(",")[1] ?? "";
-  return { base64, dataUrl: normalizedDataUrl };
 }
 
 export function ShapeToolbar(props: ShapeToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  async function handleFile(file: File | undefined) {
+  function handleFile(file: File | undefined) {
     if (!file) return;
-    try {
-      const { base64, dataUrl } = await fileToBase64Png(file);
-      props.onImageUpload(base64, dataUrl);
-    } catch (error) {
-      console.error("Failed to process uploaded image", error);
-    }
+    void props.onImageUpload(file);
   }
 
   return (
-    <aside className="flex h-[calc(100svh-4rem)] mt-16 w-full flex-col border-r border-white/10 bg-[#08111f]/60 backdrop-blur-md p-6 lg:w-72 overflow-y-auto">
-      <label className="text-xs font-semibold uppercase tracking-[0.22em] text-text-muted">
-        Sketch source
-      </label>
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => props.onImageSourceChange("canvas")}
-          className={cn(
-            "flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
-            props.imageSource === "canvas"
-              ? "bg-white/10 border-white/30 text-text-primary"
-              : "bg-black/20 border-white/5 text-text-secondary hover:bg-white/5 hover:text-text-primary"
-          )}
-        >
-          <Pencil className="h-3.5 w-3.5" />
-          Draw
-        </button>
-        <button
-          type="button"
-          onClick={() => props.onImageSourceChange("upload")}
-          className={cn(
-            "flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
-            props.imageSource === "upload"
-              ? "bg-white/10 border-white/30 text-text-primary"
-              : "bg-black/20 border-white/5 text-text-secondary hover:bg-white/5 hover:text-text-primary"
-          )}
-        >
-          <ImageIcon className="h-3.5 w-3.5" />
-          Upload
-        </button>
-      </div>
-
-      {props.imageSource === "upload" && (
-        <div className="mt-4 flex flex-col gap-3">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={ACCEPTED_TYPES}
-            className="sr-only"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              void handleFile(file);
-              event.target.value = "";
-            }}
+    <aside className="flex w-full flex-col overflow-y-auto border-r border-rule bg-ink-0 lg:h-[calc(100vh-57px)] lg:w-72">
+      {/* Section: source */}
+      <Section label="01 / source">
+        <div className="grid grid-cols-2 gap-px bg-rule">
+          <SegmentButton
+            active={props.imageSource === "canvas"}
+            onClick={() => props.onImageSourceChange("canvas")}
+            icon={<Pencil className="h-3 w-3" />}
+            label="draw"
           />
-          {props.uploadedPreview ? (
-            <div className="relative overflow-hidden rounded-xl border border-white/10 bg-black/40">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={props.uploadedPreview}
-                alt="Uploaded sketch"
-                className="block h-32 w-full object-contain"
-              />
+          <SegmentButton
+            active={props.imageSource === "upload"}
+            onClick={() => props.onImageSourceChange("upload")}
+            icon={<ImageIcon className="h-3 w-3" />}
+            label="upload"
+          />
+        </div>
+
+        {props.imageSource === "upload" && (
+          <div className="mt-4">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ACCEPTED_TYPES}
+              className="sr-only"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                handleFile(file);
+                event.target.value = "";
+              }}
+            />
+            {props.uploadedPreview ? (
+              <div className="relative border border-rule bg-ink-50">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={props.uploadedPreview}
+                  alt="Uploaded sketch"
+                  className="block h-28 w-full object-contain"
+                />
+                <button
+                  type="button"
+                  onClick={props.onClearUpload}
+                  className="absolute right-1.5 top-1.5 border border-rule-strong bg-ink-0/80 p-1 text-paper-200 transition hover:text-paper-50"
+                  aria-label="Remove uploaded image"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
               <button
                 type="button"
-                onClick={props.onClearUpload}
-                className="absolute right-2 top-2 rounded-full bg-black/70 p-1 text-text-secondary transition hover:bg-black/90 hover:text-text-primary"
-                aria-label="Remove uploaded image"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex w-full flex-col items-center justify-center gap-2 border border-dashed border-rule-strong bg-ink-50 px-3 py-6 text-paper-200 transition hover:border-lime hover:text-paper-50"
               >
-                <X className="h-3.5 w-3.5" />
+                <Upload className="h-4 w-4" />
+                <span className="font-mono text-[11px] uppercase tracking-cap">drop or click</span>
+                <span className="font-mono text-[10px] uppercase tracking-cap text-paper-300">png · jpg · webp</span>
               </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 bg-black/30 px-3 py-6 text-xs text-text-secondary transition hover:border-accent/60 hover:bg-white/5 hover:text-text-primary"
-            >
-              <Upload className="h-5 w-5" />
-              <span className="font-medium">Drop or click to upload</span>
-              <span className="text-[0.7rem] text-text-muted">PNG, JPG or WebP</span>
-            </button>
-          )}
-          {props.uploadedPreview && (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="text-xs font-medium text-accent transition hover:text-accent/80"
-            >
-              Replace image
-            </button>
-          )}
-        </div>
-      )}
-
-      <label className="mt-8 text-xs font-semibold uppercase tracking-[0.22em] text-text-muted">
-        Language
-      </label>
-      <div className="mt-4 flex flex-col gap-2">
-        {languages.map((item) => (
-          <button
-            key={item.value}
-            className={cn(
-              "rounded-lg px-4 py-3 text-sm font-medium transition-colors text-left border",
-              props.language === item.value
-                ? "bg-white/10 border-white/30 text-text-primary"
-                : "bg-black/20 border-white/5 text-text-secondary hover:bg-white/5 hover:text-text-primary"
             )}
-            onClick={() => props.onLanguageChange(item.value)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-      <label className="mt-8 text-xs font-semibold uppercase tracking-[0.22em] text-text-muted">
-        Problem context
-      </label>
-      <textarea
-        value={props.problemContext}
-        onChange={(event) => props.onContextChange(event.target.value)}
-        placeholder="What problem are you solving?"
-        className="mt-4 min-h-[120px] resize-none rounded-xl border border-white/10 bg-black/40 p-4 font-body text-[0.95rem] text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent focus:bg-white/5"
-      />
-      <div className="mt-auto space-y-4 pt-8">
-        <Button onClick={props.onAnalyze} disabled={!props.canAnalyze || props.isBusy} className="w-full justify-center">
-          <Terminal className="mr-2 inline h-4 w-4" />
-          {props.imageSource === "upload" ? "Analyze Sketch" : "Analyze Canvas"}
-        </Button>
-        <div className="flex items-start gap-3 rounded-lg border border-white/5 bg-black/20 p-4 text-xs text-text-secondary leading-relaxed">
-          <GitBranch className="h-4 w-4 shrink-0 text-accent mt-0.5" />
-          <p>
-            {props.imageSource === "upload"
-              ? "Upload a photo of a hand-drawn flowchart and we'll generate code from it."
-              : "Draw lines and connect elements with Excalidraw tools."}
-          </p>
+            {props.uploadedPreview && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="mt-3 font-mono text-[11px] uppercase tracking-cap text-paper-200 hover:text-lime"
+              >
+                replace image →
+              </button>
+            )}
+          </div>
+        )}
+      </Section>
+
+      {/* Section: language */}
+      <Section label="02 / language">
+        <div className="grid gap-px bg-rule">
+          {languages.map((item) => (
+            <button
+              key={item.value}
+              onClick={() => props.onLanguageChange(item.value)}
+              className={cn(
+                "flex items-center justify-between bg-ink-0 px-4 py-3 font-mono text-[12px] uppercase tracking-cap transition-colors",
+                props.language === item.value
+                  ? "text-paper-50"
+                  : "text-paper-200 hover:bg-ink-50 hover:text-paper-50"
+              )}
+            >
+              <span className="flex items-center gap-3">
+                <span className={cn("tabular text-[10px]", props.language === item.value ? "text-lime" : "text-paper-300")}>
+                  {props.language === item.value ? "●" : "○"}
+                </span>
+                {item.label}
+              </span>
+              <span className="font-mono text-[10px] text-paper-300">{item.ext}</span>
+            </button>
+          ))}
         </div>
+      </Section>
+
+      {/* Section: context */}
+      <Section label="03 / problem context">
+        <textarea
+          value={props.problemContext}
+          onChange={(event) => props.onContextChange(event.target.value)}
+          placeholder="what problem are you solving?"
+          className="min-h-[112px] w-full resize-none border border-rule bg-ink-50 p-3 font-mono text-[12px] leading-relaxed text-paper-50 outline-none transition placeholder:text-paper-300 focus:border-rule-strong"
+        />
+      </Section>
+
+      {/* Action stack */}
+      <div className="mt-auto border-t border-rule p-5">
+        <button
+          onClick={props.onAnalyze}
+          disabled={!props.canAnalyze || props.isBusy}
+          className="group inline-flex h-12 w-full items-center justify-between border border-lime bg-lime px-4 font-mono text-[12px] uppercase tracking-cap text-ink-0 transition-colors hover:bg-paper-50 hover:border-paper-50 disabled:cursor-not-allowed disabled:border-graphite disabled:bg-graphite disabled:text-paper-300"
+        >
+          <span className="flex items-center gap-3">
+            <Terminal className="h-3.5 w-3.5" />
+            {props.imageSource === "upload" ? "analyze sketch" : "analyze canvas"}
+          </span>
+          <span className="tabular text-[10px] text-ink-0/60 group-disabled:text-paper-300">⏎</span>
+        </button>
+
+        <button
+          onClick={props.onPublish}
+          disabled={!props.canPublish}
+          className="mt-3 inline-flex h-12 w-full items-center justify-between border border-rule-strong bg-transparent px-4 font-mono text-[12px] uppercase tracking-cap text-paper-50 transition-colors hover:bg-paper-50 hover:text-ink-0 disabled:cursor-not-allowed disabled:border-rule disabled:text-paper-300"
+        >
+          <span className="flex items-center gap-3">
+            <Share2 className="h-3.5 w-3.5" />
+            publish
+          </span>
+          <span className="tabular text-[10px] text-paper-300">→</span>
+        </button>
+
+        {props.otsuThreshold !== null && (
+          <p className="mt-5 flex items-center justify-between font-mono text-[10px] uppercase tracking-cap text-paper-300">
+            <span>otsu binarised</span>
+            <span className="tabular text-amber">t = {props.otsuThreshold}</span>
+          </p>
+        )}
       </div>
     </aside>
+  );
+}
+
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <section className="border-b border-rule p-5">
+      <p className="eyebrow">{label}</p>
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}
+
+function SegmentButton({
+  active,
+  onClick,
+  icon,
+  label
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex items-center justify-center gap-2 px-3 py-3 font-mono text-[11px] uppercase tracking-cap transition-colors",
+        active
+          ? "bg-paper-50 text-ink-0"
+          : "bg-ink-0 text-paper-200 hover:bg-ink-50 hover:text-paper-50"
+      )}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
