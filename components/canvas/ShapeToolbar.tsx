@@ -28,6 +28,7 @@ interface ShapeToolbarProps {
   onContextChange: (value: string) => void;
   onAnalyze: () => void;
   onPublish: () => void;
+  onClearDraft?: () => void;
   onImageSourceChange: (source: ImageSource) => void;
   onImageUpload: (file: File) => void | Promise<void>;
   onClearUpload: () => void;
@@ -181,6 +182,16 @@ export function ShapeToolbar(props: ShapeToolbarProps) {
             <span>otsu binarised</span>
             <span className="tabular text-amber">t = {props.otsuThreshold}</span>
           </p>
+        )}
+
+        {props.onClearDraft && (
+          <button
+            type="button"
+            onClick={props.onClearDraft}
+            className="mt-4 w-full text-left font-mono text-[10px] uppercase tracking-cap text-paper-300 transition-colors hover:text-crimson"
+          >
+            clear saved draft ↺
+          </button>
         )}
       </div>
     </aside>
