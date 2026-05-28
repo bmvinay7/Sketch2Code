@@ -33,6 +33,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  // Auth-first: don't leak the request schema to unauthenticated callers
+  // via a "title required" 400 before they've even proven they can hit this.
+  const writer = await resolveWriter();
+  if (!writer.ok) return NextResponse.json({ error: writer.error }, { status: writer.status });
+
   let body: {
     title?: string;
     problem?: string;
@@ -49,9 +54,6 @@ export async function POST(request: Request) {
   if (!body.title || !body.language) {
     return NextResponse.json({ error: "title and language are required." }, { status: 400 });
   }
-
-  const writer = await resolveWriter();
-  if (!writer.ok) return NextResponse.json({ error: writer.error }, { status: writer.status });
 
   try {
     const flowchart = await prisma.flowchart.create({

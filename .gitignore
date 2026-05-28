@@ -56,3 +56,5 @@ Thumbs.db
 # Neon CLI scratch
 .neon
 .vercel
+*.docx
+Report Template.docx
