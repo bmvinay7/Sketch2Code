@@ -11,7 +11,9 @@ import { CodePanel } from "@/components/code/CodePanel";
 import { CodeErrorBoundary } from "@/components/code/CodeErrorBoundary";
 import { prepareImageFromBlob, prepareImageFromFile, type PreparedImage } from "@/lib/image";
 
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:4001";
+// Streaming + analyze now run as Next.js Route Handlers on the same origin,
+// so we always use relative paths. The old NEXT_PUBLIC_BACKEND_URL env var
+// is dead and intentionally not read anywhere.
 const FlowCanvas = dynamic(() => import("@/components/canvas/FlowCanvas").then((mod) => mod.FlowCanvas), {
   ssr: false
 });
@@ -94,7 +96,7 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
 
     // 1. Code Generation
     try {
-      const response = await fetch(`${backendUrl}/stream`, {
+      const response = await fetch(`/api/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, language, problemContext, imageBase64: prepared.base64 })
@@ -123,7 +125,7 @@ export function CanvasWorkspace({ sessionId }: { sessionId: string }) {
 
     // 2. Algorithm Analysis
     try {
-      const response = await fetch(`${backendUrl}/analyze`, {
+      const response = await fetch(`/api/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, language, problemContext, imageBase64: prepared.base64 })
