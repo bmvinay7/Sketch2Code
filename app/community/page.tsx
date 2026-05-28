@@ -75,9 +75,10 @@ async function fetchPosts(params: SearchParams): Promise<{ cards: FlowchartCardD
 export default async function CommunityPage({
   searchParams
 }: {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 }) {
-  const { cards, offline } = await fetchPosts(searchParams);
+  const params = await searchParams;
+  const { cards, offline } = await fetchPosts(params);
 
   return (
     <section className="mx-auto max-w-[1480px] px-6 pb-24 pt-12 lg:px-10">
@@ -107,9 +108,9 @@ export default async function CommunityPage({
       {/* Filters */}
       <div className="mt-10">
         <LibraryFilters
-          defaultQuery={searchParams.q ?? ""}
-          defaultLanguage={searchParams.language ?? "All"}
-          defaultSort={normaliseSort(searchParams.sort)}
+          defaultQuery={params.q ?? ""}
+          defaultLanguage={params.language ?? "All"}
+          defaultSort={normaliseSort(params.sort)}
         />
       </div>
 
@@ -120,7 +121,7 @@ export default async function CommunityPage({
         </span>
         <span>
           sorted by{" "}
-          <span className="text-paper-50">{normaliseSort(searchParams.sort)}</span>
+          <span className="text-paper-50">{normaliseSort(params.sort)}</span>
         </span>
       </div>
 

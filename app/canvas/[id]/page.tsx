@@ -1,5 +1,6 @@
 import { CanvasWorkspace } from "@/components/canvas/CanvasWorkspace";
 
-export default function CanvasPage({ params }: { params: { id: string } }) {
-  return <CanvasWorkspace sessionId={params.id === "new" ? crypto.randomUUID() : params.id} />;
+export default async function CanvasPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <CanvasWorkspace sessionId={id === "new" ? crypto.randomUUID() : id} />;
 }

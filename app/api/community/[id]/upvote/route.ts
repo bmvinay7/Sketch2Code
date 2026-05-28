@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWriter } from "@/lib/currentUser";
 
-export async function POST(_request: Request, { params }: { params: { id: string } }) {
+export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const writer = await resolveWriter();
   if (!writer.ok) return NextResponse.json({ error: writer.error }, { status: writer.status });
   try {
     const post = await prisma.communityPost.update({
-      where: { id: params.id },
+      where: { id },
       data: { upvotes: { increment: 1 } }
     });
     return NextResponse.json({ post });

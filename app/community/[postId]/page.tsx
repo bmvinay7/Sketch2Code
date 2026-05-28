@@ -24,8 +24,9 @@ function formatDate(d: Date | string) {
     .slice(0, 10);
 }
 
-export default async function CommunityPostPage({ params }: { params: { postId: string } }) {
-  const post = await loadPost(params.postId);
+export default async function CommunityPostPage({ params }: { params: Promise<{ postId: string }> }) {
+  const { postId } = await params;
+  const post = await loadPost(postId);
   if (!post) notFound();
 
   const { flowchart } = post;
