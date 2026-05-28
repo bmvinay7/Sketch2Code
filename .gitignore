@@ -52,3 +52,6 @@ Thumbs.db
 
 # Local Codex metadata
 .codex/
+
+# Neon CLI scratch
+.neon
