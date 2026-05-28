@@ -1,11 +1,10 @@
+import { auth } from "@clerk/nextjs/server";
 import { buildStreamPrompt, streamShapeCode } from "@/lib/gemini";
+import { checkRateLimit } from "@/lib/rateLimit";
 import type { CodeLanguage } from "@/types/canvas";
 
-// Node runtime: the Gemini SDK pulls in node-only deps.
 export const runtime = "nodejs";
-// Vercel hobby tier max for a single function execution.
 export const maxDuration = 60;
-// Force dynamic so this never gets cached or pre-rendered.
 export const dynamic = "force-dynamic";
 
 interface StreamBody {
@@ -16,14 +15,33 @@ interface StreamBody {
 }
 
 export async function POST(request: Request) {
+  // Auth: stream is gated to signed-in users so anonymous traffic can't drain Gemini quota.
+  const { userId } = await auth();
+  if (!userId) {
+    return jsonError("Sign in to generate code from your sketch.", 401);
+  }
+
+  const rate = checkRateLimit(`stream:${userId}`);
+  if (!rate.allowed) {
+    return new Response(
+      JSON.stringify({ error: "Rate limit exceeded. Try again in an hour." }),
+      {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": String(Math.max(1, Math.ceil((rate.resetAt - Date.now()) / 1000))),
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": String(rate.resetAt)
+        }
+      }
+    );
+  }
+
   let body: StreamBody;
   try {
     body = (await request.json()) as StreamBody;
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body." }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" }
-    });
+    return jsonError("Invalid JSON body.", 400);
   }
 
   const prompt = buildStreamPrompt(body.language, body.problemContext);
@@ -51,8 +69,16 @@ export async function POST(request: Request) {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
-      // Vercel-specific: opt out of edge buffering so chunks flush as written.
-      "X-Accel-Buffering": "no"
+      "X-Accel-Buffering": "no",
+      "X-RateLimit-Remaining": String(rate.remaining),
+      "X-RateLimit-Reset": String(rate.resetAt)
     }
+  });
+}
+
+function jsonError(error: string, status: number) {
+  return new Response(JSON.stringify({ error }), {
+    status,
+    headers: { "Content-Type": "application/json" }
   });
 }

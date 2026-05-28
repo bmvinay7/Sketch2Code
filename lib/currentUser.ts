@@ -18,10 +18,10 @@ type ResolveResult =
  * Two modes:
  * - DISABLE_AUTH=true (local dev): upsert a deterministic Local Dev user.
  * - normal (prod): read the Clerk session, then upsert the matching row from
- *   the current Clerk profile. The upsert is the "self-heal" path — if no
- *   webhook ever fired (Clerk -> /api/webhooks/clerk), the user still gets
- *   created on their first write. That makes the webhook a pure optimization
- *   rather than a hard dependency, which is the right trade for a demo.
+ *   the current Clerk profile. The upsert is the "self-heal" path — there is
+ *   no Clerk webhook in this project; the row gets created on the user's
+ *   first write. Trades a tiny latency on first publish for zero dashboard
+ *   configuration, which is the right call for a demo.
  */
 export async function resolveWriter(): Promise<ResolveResult> {
   try {
